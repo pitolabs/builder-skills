@@ -51,7 +51,6 @@ Pick the scope first; it decides the path.
 
 Follow the layout a repo already has rather than adding a second skill folder. A builder-skills skill reaches the
 tools as a symlink `~/.config/opencode/skills/<name>` → the clone's `skills/<name>` (its README says how).
-`~/.config/opencode/skills-local/` is **not** read by any tool — a skill put there never fires.
 
 ## The three levels
 
