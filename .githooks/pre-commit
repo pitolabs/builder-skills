@@ -1,8 +1,11 @@
 #!/bin/sh
-# Formats the staged files before each commit: JavaScript/TypeScript/JSON with the pinned Biome, Python with the
-# pinned Ruff. The same hook as the two skills' assets, merged for a repository that has both. Turned on by
-# `bun install` ("prepare" sets core.hooksPath to .githooks).
+# Before each commit: refuses secrets and personal data in the staged changes (scripts/privacy-scan.sh, the
+# public-repo-standard skill), then formats the staged files: JavaScript/TypeScript/JSON with the pinned Biome, Python
+# with the pinned Ruff. The two repo-standard skills' hooks merged for a repository that has both. Turned on by
+# `bun install` ("prepare" sets core.hooksPath to .githooks); pre-push scans again everything about to be published.
 set -eu
+
+sh "$(git rev-parse --show-toplevel)/scripts/privacy-scan.sh" --staged
 
 # The formatters rewrite the working-tree file and `git update-index --again` re-stages it whole, so a staged file
 # that also has unstaged edits would get those edits committed. Refuse any path in both the staged and the unstaged

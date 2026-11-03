@@ -1,0 +1,6 @@
+#!/bin/sh
+# Refuses a commit whose staged changes carry a secret or personal data (scripts/privacy-scan.sh). In a repository
+# that already has a pre-commit hook (a formatter), put the privacy-scan line first in that hook instead of adding
+# this file. pre-push scans again everything about to be published: this one only catches it earlier.
+set -eu
+sh "$(git rev-parse --show-toplevel)/scripts/privacy-scan.sh" --staged
