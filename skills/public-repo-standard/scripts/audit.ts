@@ -331,11 +331,26 @@ function behaviourChecks() {
 		commit("audit-email.txt", "nothing here", ["someone", "gmail.com"].join("@"));
 		attempt("a commit authored with a personal e-mail", "main");
 		git(top, "reset", "-q", "--hard", base);
+		// A blocklist entry that only a merge's conflict resolution introduces: `git log -p` shows no diff for a merge,
+		// so a scan without --diff-merges never sees it. Built with plumbing (no checkout of another branch).
+		write("audit-merge.txt", "side");
+		git(top, "add", "audit-merge.txt");
+		const side = git(top, "commit-tree", git(top, "write-tree").out.trim(), "-p", base, "-m", "audit side").out.trim();
+		commit("audit-merge.txt", "main");
+		write("audit-merge.txt", `resolved ${probes[3][1]}`);
+		git(top, "add", "audit-merge.txt");
+		const tree = git(top, "write-tree").out.trim();
+		const merge = git(top, "commit-tree", tree, "-p", "HEAD", "-p", side, "-m", "audit merge").out.trim();
+		git(top, "update-ref", "refs/heads/main", merge);
+		attempt("a blocklist entry only in a merge's conflict resolution", "main");
+		git(top, "reset", "-q", "--hard", base);
 		add(
 			"hooks.pre-push",
 			bad ? "fail" : "pass",
 			results.join("; "),
-			bad ? "use assets/.githooks/pre-push: it scans every commit the push carries, not only the last" : undefined,
+			bad
+				? "use assets/.githooks/pre-push and assets/scripts/privacy-scan.sh: every commit the push carries, merges included"
+				: undefined,
 		);
 	}
 }

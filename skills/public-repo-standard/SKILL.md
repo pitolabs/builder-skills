@@ -53,9 +53,11 @@ first use (the gitleaks download). The hook tests run on a snapshot in a tempora
 activate the hooks the way a clone does (`scripts/setup.sh`, else `bun install`, else
 `core.hooksPath .githooks`), then commit generated leaks (a GitHub token, a phone number, an e-mail
 address, a random blocklist entry) and push them to a throwaway bare remote: one in an earlier
-commit than the last, the same commits on a new branch, a commit authored with a personal e-mail.
-Every case must be refused, and the output must not show the blocklist entry. The history scan reads
-the repository itself (every ref), read-only, with your real lists.
+commit than the last, the same commits on a new branch, a commit authored with a personal e-mail,
+and a blocklist entry that only a merge's conflict resolution introduces. Every case must be
+refused, and the output must not show the blocklist entry. The history scan reads the repository
+itself, read-only, with your real lists: origin's branches as of the last fetch (what is public),
+or every local ref when nothing has been pushed yet.
 
 ## Fix what fails
 
@@ -87,6 +89,9 @@ why the hooks matter more than the backstop.
 - A pre-push hook that scans only the last commit (`git show`, `HEAD~1..HEAD`) lets a leak through
   when a clean commit sits on top of it, and a new branch has no remote sha to diff against. The
   asset scans `<remote sha>..<local sha>`, or `<local sha> --not --remotes` for a new branch.
+- `git log -p` shows no diff for a merge commit, so a token or a name typed while resolving a
+  conflict reaches no scanner that reads `git log -p` (gitleaks' `git` mode included). The asset
+  adds `--diff-merges=first-parent` to both its gitleaks and its blocklist scans.
 - Binary files (PDFs, images) are not scanned: gitleaks and the blocklist read text. A scanned
   document or a photo with location metadata needs a human look before it is committed.
 - Do not put production tokens in the CI secret: a compromised workflow could read every secret

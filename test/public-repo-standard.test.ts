@@ -102,6 +102,26 @@ describe("public-repo-standard audit", () => {
 	);
 
 	test(
+		"a scan that skips merge diffs publishes what only a conflict resolution introduced",
+		() => {
+			const scanner = readFileSync(join(ASSETS, "scripts/privacy-scan.sh"), "utf8");
+			const blind = scanner.replaceAll("--diff-merges=first-parent ", "");
+			expect(blind).not.toBe(scanner);
+			const r = audit((dir) => write(dir, "scripts/privacy-scan.sh", blind, 0o755));
+			const detail = check(r, "hooks.pre-push")?.detail ?? "";
+			expect(check(r, "hooks.pre-push")?.status).toBe("fail");
+			expect(detail).toContain("a blocklist entry only in a merge's conflict resolution: PUSHED");
+			// Everything else is still refused: the merge is the one blind spot.
+			expect(detail).toContain("a blocklist entry: refused");
+			const full = audit();
+			expect(check(full, "hooks.pre-push")?.detail).toContain(
+				"a blocklist entry only in a merge's conflict resolution: refused",
+			);
+		},
+		TIMEOUT,
+	);
+
+	test(
 		"a pre-commit hook without the scan commits secrets and personal data",
 		() => {
 			const r = audit((dir) => write(dir, ".githooks/pre-commit", "#!/bin/sh\nexit 0\n", 0o755));

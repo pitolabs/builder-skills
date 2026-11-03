@@ -35,11 +35,13 @@ failed=""
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-# 1. gitleaks. .gitleaks.toml at the top of the repository is picked up automatically.
+# 1. gitleaks. .gitleaks.toml at the top of the repository is picked up automatically. `git log -p` shows no diff for a
+# merge commit, so content that only a conflict resolution introduced would pass unseen: --diff-merges=first-parent
+# diffs each merge against its first parent (gitleaks runs git log -p with these options).
 if [ "$mode" = --staged ]; then
   sh "$here/gitleaks.sh" git --pre-commit --staged --redact -v --no-banner --log-level warn "$top" || failed="$failed gitleaks"
 else
-  sh "$here/gitleaks.sh" git --log-opts="$revs" --redact -v --no-banner --log-level warn "$top" || failed="$failed gitleaks"
+  sh "$here/gitleaks.sh" git --log-opts="--diff-merges=first-parent $revs" --redact -v --no-banner --log-level warn "$top" || failed="$failed gitleaks"
 fi
 
 # 2. identities. GitHub's own web commits use noreply@github.com as committer.
@@ -81,7 +83,7 @@ if [ "$mode" = --staged ]; then
   start=staged
 else
   # shellcheck disable=SC2086
-  git -C "$top" log -p --no-color --no-ext-diff -U0 --format='@@privacy-commit %h%n%an <%ae>%n%cn <%ce>%n%B' $revs >"$tmp/stream"
+  git -C "$top" log -p --diff-merges=first-parent --no-color --no-ext-diff -U0 --format='@@privacy-commit %h%n%an <%ae>%n%cn <%ce>%n%B' $revs >"$tmp/stream"
   start=""
 fi
 # Added lines, added paths, and (for commits) author, committer and message. Removed lines are not checked: a commit
