@@ -35,13 +35,13 @@ javascript-repo-standard    yes       yes       yes       yes
 public-repo-standard        yes       yes       yes       yes
 python-repo-standard        yes       yes       yes       yes
 write-skill                 yes       yes       yes       yes
-(instructions)              yes       ?         yes       yes
+(instructions)              yes       yes       yes       yes
 (- : not installed here; ? : could not ask, e.g. not logged in)
 ```
 
 It asks each installed harness in a fresh process (a running session keeps what it read at start), skips the ones
-not installed, and exits 1 if one misses a skill or the instructions. `?` means the harness could not answer (above:
-Claude Code not logged in on that machine). Run it after installing, renaming or adding a skill, or changing the
+not installed, and exits 1 if one misses a skill or the instructions. `?` means the harness could not answer (e.g.
+Claude Code not logged in). Run it after installing, renaming or adding a skill, or changing the
 instructions' links.
 
 ## Install
