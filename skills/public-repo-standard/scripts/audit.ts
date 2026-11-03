@@ -258,13 +258,18 @@ function behaviourChecks() {
 	const write = (f: string, s: string) => writeFileSync(join(top, f), `${s}\n`);
 	const leakedMarker = (s: string) => s.toLowerCase().includes(marker);
 
-	// pre-commit: each probe staged alone must be refused.
+	// pre-commit: each probe staged alone must be refused. The last one hides the entry in a file name next to a token,
+	// so gitleaks and the blocklist both report that path: the output must still not show the entry.
 	if (existsSync(join(top, hooksDir, "pre-commit"))) {
 		const results: string[] = [];
 		let bad = false;
-		for (const [name, content] of probes) {
-			write("audit-probe.txt", content);
-			git(top, "add", "audit-probe.txt");
+		const staged: [string, string, string][] = [
+			...probes.map(([name, content]): [string, string, string] => [name, "audit-probe.txt", content]),
+			["a blocklist entry in a file name", `notes-${marker}.txt`, probes[0][1]],
+		];
+		for (const [name, file, content] of staged) {
+			write(file, content);
+			git(top, "add", file);
 			const c = run(["git", "commit", "-q", "-m", "audit probe"], top, env);
 			if (c.ok) {
 				bad = true;
@@ -278,7 +283,7 @@ function behaviourChecks() {
 				}
 				git(top, "reset", "-q", "--hard", "HEAD");
 			}
-			rmSync(join(top, "audit-probe.txt"), { force: true });
+			rmSync(join(top, file), { force: true });
 		}
 		add(
 			"hooks.pre-commit",
@@ -330,6 +335,14 @@ function behaviourChecks() {
 		// Built at run time, like the other probes: a literal address here would be flagged by the scan itself.
 		commit("audit-email.txt", "nothing here", ["someone", "gmail.com"].join("@"));
 		attempt("a commit authored with a personal e-mail", "main");
+		git(top, "reset", "-q", "--hard", base);
+		// The entry in a file name (with a token, so gitleaks names the file too), and as an author e-mail: refused, and
+		// the output must not show it.
+		commit(`notes-${marker}.txt`, probes[0][1]);
+		attempt("a blocklist entry in a file name", "main");
+		git(top, "reset", "-q", "--hard", base);
+		commit("audit-id.txt", "nothing here", `${marker}@example.org`);
+		attempt("a blocklist entry as the author e-mail", "main");
 		git(top, "reset", "-q", "--hard", base);
 		// A blocklist entry that only a merge's conflict resolution introduces: `git log -p` shows no diff for a merge,
 		// so a scan without --diff-merges never sees it. Built with plumbing (no checkout of another branch).

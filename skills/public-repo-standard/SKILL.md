@@ -25,7 +25,9 @@ is what runs **before** the push:
 | GitHub secret scanning + push protection | on GitHub, before it accepts the push | known token formats only | server-side barrier for tokens |
 | CI job: `privacy-scan.sh --history` | after the push | anything a machine without the hooks pushed; new rules on old history | backstop |
 
-`privacy-scan.sh` runs three checks, and none of them prints what it matched:
+`privacy-scan.sh` runs three checks, and nothing it prints shows a list entry: gitleaks redacts the secrets it finds,
+and every line of output (file names, gitleaks' `File:` and `Fingerprint:` lines, e-mail addresses) has list entries
+replaced by `***`, since a file may be named after a person and an author e-mail may be an entry:
 
 1. **gitleaks**, pinned (`scripts/gitleaks.sh` downloads the release once and checks its sha256), with
    its secret rules plus `.gitleaks.toml`'s personal-data rules: Brazilian phone numbers, e-mail
@@ -54,7 +56,8 @@ activate the hooks the way a clone does (`scripts/setup.sh`, else `bun install`,
 `core.hooksPath .githooks`), then commit generated leaks (a GitHub token, a phone number, an e-mail
 address, a random blocklist entry) and push them to a throwaway bare remote: one in an earlier
 commit than the last, the same commits on a new branch, a commit authored with a personal e-mail,
-and a blocklist entry that only a merge's conflict resolution introduces. Every case must be
+the entry in a file name and as an author e-mail, and a blocklist entry that only a merge's conflict
+resolution introduces (each also staged alone at commit time). Every case must be
 refused, and the output must not show the blocklist entry. The history scan reads the repository
 itself, read-only, with your real lists: origin's branches as of the last fetch (what is public),
 or every local ref when nothing has been pushed yet.
@@ -92,6 +95,9 @@ why the hooks matter more than the backstop.
 - `git log -p` shows no diff for a merge commit, so a token or a name typed while resolving a
   conflict reaches no scanner that reads `git log -p` (gitleaks' `git` mode included). The asset
   adds `--diff-merges=first-parent` to both its gitleaks and its blocklist scans.
+- A scanner that names the file or the e-mail it refused prints the entry whenever the entry *is*
+  the file name or the e-mail (`exam-<name>.pdf`), and a public repository's CI log is public. The
+  asset masks every line it prints, gitleaks' report included.
 - Binary files (PDFs, images) are not scanned: gitleaks and the blocklist read text. A scanned
   document or a photo with location metadata needs a human look before it is committed.
 - Do not put production tokens in the CI secret: a compromised workflow could read every secret

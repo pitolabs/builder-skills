@@ -102,6 +102,26 @@ describe("public-repo-standard audit", () => {
 	);
 
 	test(
+		"a scan that prints file names and e-mails unmasked shows the blocklist entry they contain",
+		() => {
+			const scanner = readFileSync(join(ASSETS, "scripts/privacy-scan.sh"), "utf8");
+			const unmasked = scanner.replaceAll(" | mask >&2", " >&2").replace("masked(file)", "file");
+			expect(unmasked).not.toBe(scanner);
+			const r = audit((dir) => write(dir, "scripts/privacy-scan.sh", unmasked, 0o755));
+			// Still refused, but the refusal itself publishes the entry (a public repository's CI log is public).
+			expect(check(r, "hooks.pre-commit")?.status).toBe("fail");
+			expect(check(r, "hooks.pre-commit")?.detail).toContain("THE OUTPUT SHOWED THE BLOCKLIST ENTRY");
+			expect(check(r, "hooks.pre-push")?.status).toBe("fail");
+			const full = audit();
+			expect(check(full, "hooks.pre-commit")?.detail).toContain("a blocklist entry in a file name: refused");
+			expect(check(full, "hooks.pre-push")?.detail).toContain("a blocklist entry as the author e-mail: refused");
+			expect(check(full, "hooks.pre-commit")?.detail).not.toContain("SHOWED");
+			expect(check(full, "hooks.pre-push")?.detail).not.toContain("SHOWED");
+		},
+		TIMEOUT,
+	);
+
+	test(
 		"a scan that skips merge diffs publishes what only a conflict resolution introduced",
 		() => {
 			const scanner = readFileSync(join(ASSETS, "scripts/privacy-scan.sh"), "utf8");
