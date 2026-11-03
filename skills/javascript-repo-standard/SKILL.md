@@ -33,9 +33,14 @@ what the project already uses when it passes; do not swap it for the asset.
 
 ## Run the audit
 
+The script and `assets/` sit next to this SKILL.md. Installed as the builder-skills README says,
+that is `~/.config/opencode/skills/javascript-repo-standard/` (the same folder OmO and Claude
+Code read through their links); no need to search for it.
+
 ```bash
-bun <this skill>/scripts/audit.ts <repo> --ref origin/main   # what is on main
-bun <this skill>/scripts/audit.ts <repo> --working-tree      # your uncommitted fix
+audit=~/.config/opencode/skills/javascript-repo-standard/scripts/audit.ts
+bun "$audit" <repo> --ref origin/main   # what is on main
+bun "$audit" <repo> --working-tree      # your uncommitted fix
 ```
 
 With no flag it audits the committed `HEAD`. Every check reads one snapshot, copied to a temporary
@@ -61,7 +66,7 @@ What the behaviour checks do, so a failure can be reproduced by hand:
 2. Fix with the `fix:` lines. The files in `assets/` are tested starting points: `scripts/biome.sh`,
    `.githooks/pre-commit`, `biome.json`, `bunfig.toml`, `package.json` (scripts and `prepare`),
    `ci.yml`, `turbo.json`. Adapt them; do not paste over a config the project tuned.
-3. `bun <this skill>/scripts/audit.ts . --working-tree` until it passes, then `bun run format`
+3. `bun "$audit" . --working-tree` until it passes, then `bun run format`
    (one formatting commit, listed in `.git-blame-ignore-revs`), typecheck and tests.
 4. Commit, push, and audit once more with `--ref origin/main`.
 

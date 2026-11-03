@@ -34,9 +34,14 @@ the audit reports that as `WARN`, not `FAIL`. Keep what the project already uses
 
 ## Run the audit
 
+The script and `assets/` sit next to this SKILL.md. Installed as the builder-skills README says,
+that is `~/.config/opencode/skills/python-repo-standard/` (the same folder OmO and Claude Code
+read through their links); no need to search for it.
+
 ```bash
-uv run <this skill>/scripts/audit.py <repo> --ref origin/main   # what is on main
-uv run <this skill>/scripts/audit.py <repo> --working-tree      # your uncommitted fix
+audit=~/.config/opencode/skills/python-repo-standard/scripts/audit.py
+uv run "$audit" <repo> --ref origin/main   # what is on main
+uv run "$audit" <repo> --working-tree      # your uncommitted fix
 ```
 
 With no flag it audits the committed `HEAD`. Every check reads one snapshot, copied to a temporary
@@ -59,7 +64,7 @@ again: the edit must not be committed), and a staged file next to an unrelated u
 2. Fix with the `fix:` lines. The files in `assets/` are tested starting points: `pyproject.toml`
    (dependency group, `[tool.ruff]`), `.python-version`, `scripts/ruff.sh`, `scripts/setup.sh`,
    `.githooks/pre-commit`, `ci.yml`. Adapt them; do not paste over a config the project tuned.
-3. `uv run <this skill>/scripts/audit.py . --working-tree` until it passes, then one formatting
+3. `uv run "$audit" . --working-tree` until it passes, then one formatting
    commit (`sh scripts/ruff.sh format .`, listed in `.git-blame-ignore-revs`) and the tests.
 4. Commit, push, and audit once more with `--ref origin/main`.
 
