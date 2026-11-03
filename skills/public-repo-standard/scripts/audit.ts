@@ -184,7 +184,16 @@ historyScan();
 function historyScan() {
 	const env: Record<string, string> = {};
 	if (!existsSync(join(source, ".gitleaks.toml"))) env.GITLEAKS_CONFIG = join(ASSETS, ".gitleaks.toml");
-	const scan = run(["sh", join(ASSETS, "scripts/privacy-scan.sh"), "--history"], source, env);
+	// What is published: origin's branches as of the last fetch. Local-only commits are the pre-push hook's job, and
+	// leftovers of a history rewrite (old local branches, backups, the reflog) are not public. With no origin yet,
+	// every local ref: all of it would be published by the first push.
+	const remote = git(source, "for-each-ref", "--count=1", "refs/remotes/origin").out.trim() !== "";
+	const scope = remote ? "origin's branches (as of the last fetch)" : "every local ref (nothing pushed yet)";
+	const scan = run(
+		["sh", join(ASSETS, "scripts/privacy-scan.sh"), ...(remote ? ["--commits", "--remotes=origin"] : ["--history"])],
+		source,
+		env,
+	);
 	const lines = (scan.err + scan.out)
 		.split("\n")
 		.map((l) => l.trim())
@@ -192,12 +201,12 @@ function historyScan() {
 			/^(Finding|RuleID|File|Commit|privacy-scan: (blocklist|commits that)|[0-9a-f]{7,} (author|committer))/.test(l),
 		);
 	if (scan.ok)
-		add("history.clean", "pass", "every commit on every ref passes gitleaks, the identity check and the blocklist");
+		add("history.clean", "pass", `${scope}: every commit passes gitleaks, the identity check and the blocklist`);
 	else
 		add(
 			"history.clean",
 			"fail",
-			`the published history already carries findings:\n       ${lines.slice(0, 24).join("\n       ")}`,
+			`${scope} already carry findings:\n       ${lines.slice(0, 24).join("\n       ")}`,
 			"rewrite the commits (git rebase -i / git filter-repo), force-push, and ask GitHub support to purge cached views; rotate any secret",
 		);
 }

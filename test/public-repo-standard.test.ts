@@ -139,6 +139,42 @@ describe("public-repo-standard audit", () => {
 	);
 
 	test(
+		"with an origin, the history check judges what origin has, not a rewrite's local leftovers",
+		() => {
+			const badCommit = (dir: string) =>
+				sh(["git", "-c", `user.email=${PERSONAL}`, "commit", "-q", "--no-verify", "--allow-empty", "-m", "x"], dir);
+			const withOrigin = (dir: string) => {
+				const remote = `${dir}-origin.git`;
+				sh(["git", "init", "-q", "--bare", remote], dir);
+				sh(["git", "remote", "add", "origin", remote], dir);
+			};
+			// The bad commit stays on a local branch (like an old branch after a rewrite); origin has only clean ones.
+			const local = audit(
+				() => {},
+				(dir) => {
+					withOrigin(dir);
+					sh(["git", "push", "-q", "--no-verify", "origin", "main"], dir);
+					sh(["git", "switch", "-q", "-c", "old-main"], dir);
+					badCommit(dir);
+				},
+			);
+			expect(check(local, "history.clean")?.status).toBe("pass");
+			expect(check(local, "history.clean")?.detail).toContain("origin's branches");
+			// The same commit pushed: now it is public.
+			const pushed = audit(
+				() => {},
+				(dir) => {
+					withOrigin(dir);
+					badCommit(dir);
+					sh(["git", "push", "-q", "--no-verify", "origin", "main"], dir);
+				},
+			);
+			expect(check(pushed, "history.clean")?.status).toBe("fail");
+		},
+		TIMEOUT,
+	);
+
+	test(
 		"a CI scan that checks out only the last commit is no history scan",
 		() => {
 			const r = audit((dir) =>
