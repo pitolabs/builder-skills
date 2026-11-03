@@ -112,7 +112,7 @@ def report():
     if opts.json:
         print(json.dumps({"repo": str(source), "audited": audited, "failed": failed, "checks": checks}, indent=2))
     else:
-        print(f"audit-python-project: {source} at {audited}")
+        print(f"python-repo-standard audit: {source} at {audited}")
         for c in checks:
             fix = f"\n     fix: {c['fix']}" if c.get("fix") and c["status"] != "pass" else ""
             print(f"{c['status'].upper():4} {c['id']}: {c['detail']}{fix}")
@@ -161,7 +161,7 @@ if hand:
         "fail",
         f"requirements files not exported from uv.lock: {', '.join(sorted(hand))}",
         "dependencies live in pyproject.toml; if a Dockerfile needs a file, generate it:"
-        " uv export --frozen --no-dev -o requirements.txt",
+        " uv export --locked --no-dev -o requirements.txt",
     )
 if ".python-version" in tracked:
     add("py.version", "pass", f".python-version pins {text_of('.python-version').strip()}")
@@ -232,19 +232,23 @@ else:
     other = re.search(r"\b(pip install|pip-sync|poetry install|pipenv install|uv pip install)\b[^\n]*", ci)
     if other:
         add(
-            "ci.frozen-install",
+            "ci.locked-install",
             "fail",
             f"CI installs with {other.group(0).strip()}",
-            "uv sync --frozen (or --locked), everywhere CI installs",
+            "uv sync --locked, everywhere CI installs",
+        )
+    elif re.search(r"\buv sync\b[^\n]*--locked", ci):
+        add("ci.locked-install", "pass", "CI installs with uv sync --locked")
+    elif re.search(r"\buv sync\b[^\n]*--frozen", ci):
+        # --frozen installs from uv.lock without checking it: a pyproject change missing from the lock goes unnoticed.
+        add(
+            "ci.locked-install",
+            "fail",
+            "CI installs with uv sync --frozen, which never checks that uv.lock matches pyproject.toml",
+            "uv sync --locked",
         )
     else:
-        ok = re.search(r"\buv sync\b[^\n]*--(frozen|locked)", ci)
-        add(
-            "ci.frozen-install",
-            "pass" if ok else "fail",
-            "CI installs with uv sync --frozen/--locked",
-            "a run step: uv sync --frozen",
-        )
+        add("ci.locked-install", "fail", "CI never installs with uv sync --locked", "a run step: uv sync --locked")
     lines = ci.splitlines()
     fmt = any(re.search(r"\bruff(\.sh)?\s+format\b.*--check", s) for s in lines)
     lint = any(re.search(r"\bruff(\.sh)?\s+check\b", s) and "--fix" not in s for s in lines)
@@ -261,7 +265,7 @@ else:
         "sh scripts/ruff.sh check .",
     )
     if not re.search(r"\bpytest\b|\bunittest\b", ci):
-        add("ci.tests", "warn", "CI runs no tests", "uv run --frozen pytest")
+        add("ci.tests", "warn", "CI runs no tests", "uv run --locked pytest")
 
 
 # --- behaviour in a fresh copy --------------------------------------------------------------------------------------
@@ -279,7 +283,7 @@ def behaviour() -> None:
             "setup.script",
             "fail",
             "no scripts/setup.sh: nothing turns the hook on after a clone",
-            "copy assets/scripts/setup.sh (uv sync --frozen, then core.hooksPath) and name it in the README",
+            "copy assets/scripts/setup.sh (uv sync --locked, then core.hooksPath) and name it in the README",
         )
         return
     setup = run(["sh", "scripts/setup.sh"], top, env)
@@ -289,7 +293,7 @@ def behaviour() -> None:
             "setup.script",
             "fail",
             f"sh scripts/setup.sh failed: {tail}",
-            "it must work in a fresh clone: uv sync --frozen needs a current uv.lock",
+            "it must work in a fresh clone: uv sync --locked needs a uv.lock that matches pyproject.toml (uv lock)",
         )
         return
     add("setup.script", "pass", "sh scripts/setup.sh works in a fresh copy")

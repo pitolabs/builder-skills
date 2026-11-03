@@ -5,4 +5,4 @@ set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 bun install --frozen-lockfile
-uv sync --frozen
+uv sync --locked

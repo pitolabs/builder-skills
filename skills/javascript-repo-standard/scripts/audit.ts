@@ -545,7 +545,7 @@ function report(): never {
 	const failed = checks.filter((c) => c.status === "fail").length;
 	if (asJson) console.log(JSON.stringify({ repo: source, audited, failed, checks }, null, 2));
 	else {
-		console.log(`audit-javascript-project: ${source} at ${audited}`);
+		console.log(`javascript-repo-standard audit: ${source} at ${audited}`);
 		for (const c of checks)
 			console.log(
 				`${c.status.toUpperCase().padEnd(4)} ${c.id}: ${c.detail}${c.fix && c.status !== "pass" ? `\n     fix: ${c.fix}` : ""}`,

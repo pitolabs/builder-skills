@@ -17,7 +17,7 @@ if [ -z "$want" ]; then
   exit 1
 fi
 if [ "$want" != "$have" ]; then
-  echo "ruff: .venv has $have but uv.lock pins $want; run uv sync --frozen in $root" >&2
+  echo "ruff: .venv has $have but uv.lock pins $want; run uv sync --locked in $root" >&2
   exit 1
 fi
 exec "$bin" "$@"

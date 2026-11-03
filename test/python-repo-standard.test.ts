@@ -1,4 +1,4 @@
-// audit-python-project against throwaway repositories built from its own assets: the standard setup must pass, the
+// python-repo-standard's audit against throwaway repositories built from its own assets: the standard setup must pass, the
 // pre-commit framework (another correct hook manager) must pass the behaviour tests, and each way of getting it wrong
 // must fail the check that names it. Needs uv and the network (uv lock, uv sync).
 import { describe, expect, test } from "bun:test";
@@ -6,7 +6,7 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeF
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-const SKILL = join(import.meta.dir, "../skills/audit-python-project");
+const SKILL = join(import.meta.dir, "../skills/python-repo-standard");
 const ASSETS = join(SKILL, "assets");
 const TIMEOUT = 180_000;
 
@@ -29,8 +29,8 @@ function write(dir: string, file: string, text: string, mode?: number) {
 
 const asset = (f: string) => readFileSync(join(ASSETS, f), "utf8");
 
-/** A repository set up exactly as the assets say, changed by `mutate`, locked and committed; then audited. */
-function audit(mutate: (dir: string) => void = () => {}): Result {
+/** A repository set up exactly as the assets say, changed by `mutate`, locked, changed by `afterLock`, committed; then audited. */
+function audit(mutate: (dir: string) => void = () => {}, afterLock: (dir: string) => void = () => {}): Result {
 	const dir = mkdtempSync(join(tmpdir(), "audit-py-fixture-"));
 	try {
 		for (const f of [
@@ -49,6 +49,7 @@ function audit(mutate: (dir: string) => void = () => {}): Result {
 		mutate(dir);
 		sh(["git", "init", "-q"], dir);
 		sh(["uv", "lock", "--quiet"], dir);
+		afterLock(dir);
 		sh(["git", "add", "-A"], dir);
 		sh(
 			["git", "-c", "user.email=t@example.com", "-c", "user.name=t", "commit", "-q", "--no-verify", "-m", "fixture"],
@@ -68,7 +69,7 @@ function audit(mutate: (dir: string) => void = () => {}): Result {
 const status = (r: Result, id: string) => r.checks.find((c) => c.id === id)?.status;
 const failing = (r: Result) => r.checks.filter((c) => c.status === "fail").map((c) => `${c.id}: ${c.detail}`);
 
-describe("audit-python-project", () => {
+describe("python-repo-standard audit", () => {
 	test(
 		"the assets as given pass every required check, hook behaviour included",
 		() => {
@@ -134,14 +135,35 @@ describe("audit-python-project", () => {
 					dir,
 					".github/workflows/ci.yml",
 					asset("ci.yml")
-						.replace("uv sync --frozen", "pip install -r requirements.txt")
+						.replace("uv sync --locked", "pip install -r requirements.txt")
 						.replace("format --check .", "format .")
 						.replace("ruff.sh check .", "ruff.sh check --fix ."),
 				),
 			);
-			expect(status(r, "ci.frozen-install")).toBe("fail");
+			expect(status(r, "ci.locked-install")).toBe("fail");
 			expect(status(r, "ci.format-check")).toBe("fail");
 			expect(status(r, "ci.lint")).toBe("fail");
+		},
+		TIMEOUT,
+	);
+
+	test(
+		"a uv.lock that no longer matches pyproject.toml fails setup; CI on --frozen would not notice",
+		() => {
+			const stale = audit(
+				() => {},
+				(dir) =>
+					write(
+						dir,
+						"pyproject.toml",
+						asset("pyproject.toml").replace("dependencies = []", 'dependencies = ["idna==3.10"]'),
+					),
+			);
+			expect(status(stale, "setup.script")).toBe("fail");
+			const frozen = audit((dir) =>
+				write(dir, ".github/workflows/ci.yml", asset("ci.yml").replace(/uv sync --locked.*/, "uv sync --frozen")),
+			);
+			expect(status(frozen, "ci.locked-install")).toBe("fail");
 		},
 		TIMEOUT,
 	);
@@ -151,7 +173,7 @@ describe("audit-python-project", () => {
 		() => {
 			const exported = audit((dir) => {
 				sh(["uv", "lock", "--quiet"], dir);
-				write(dir, "requirements.txt", sh(["uv", "export", "--frozen", "--no-dev"], dir));
+				write(dir, "requirements.txt", sh(["uv", "export", "--locked", "--no-dev"], dir));
 			});
 			expect(status(exported, "pm.requirements")).toBeUndefined();
 			const hand = audit((dir) => write(dir, "requirements.txt", "httpx==0.28.1\n"));
@@ -176,7 +198,7 @@ describe("audit-python-project", () => {
 				write(
 					dir,
 					"scripts/setup.sh",
-					"#!/bin/sh\nset -eu\nuv sync --frozen\nuv run --frozen pre-commit install\n",
+					"#!/bin/sh\nset -eu\nuv sync --locked\nuv run --locked pre-commit install\n",
 					0o755,
 				);
 				write(

@@ -1,5 +1,5 @@
 ---
-name: audit-python-project
+name: python-repo-standard
 description: >-
   Use when creating, adopting or reviewing a Python repository (pyproject.toml, requirements*.txt
   or .py sources at its root), or when asked to set up or check its tooling: 'audit this repo',
@@ -8,10 +8,10 @@ description: >-
   behaviour in a fresh copy (uv with a committed uv.lock and .python-version, a pinned Ruff run
   only from .venv, a pre-commit hook that never commits unstaged edits, CI that refuses
   unformatted code) and fixes what fails in a worktree. Do NOT use for JavaScript/TypeScript
-  repositories (audit-javascript-project), or for a one-off formatting run.
+  repositories (javascript-repo-standard), or for a one-off formatting run.
 ---
 
-# Audit a Python project
+# Python repo standard
 
 Every Python repository follows one standard, so any of them can be picked up and worked on the
 same way. The script checks it; this file says how to read the result and fix it. It is the
@@ -21,9 +21,9 @@ JavaScript standard's counterpart: uv where that one has Bun, Ruff where it has 
 |---|---|
 | **uv** manages packages and Python: `pyproject.toml`, `uv.lock` and `.python-version` committed; no Poetry/Pipenv/PDM files; a `requirements.txt` only as `uv export` output | one tool, fast installs, the same interpreter and lockfile everywhere |
 | **Ruff** formats and lints, pinned (`ruff==x.y.z` in a dependency group), run only through `scripts/ruff.sh` | `uvx ruff`/`uv tool run ruff`/`pipx run ruff` fetch the newest Ruff; `uv run ruff` and a bare `ruff` fall back to whatever is on PATH when the project lacks it |
-| `scripts/setup.sh` after a clone: `uv sync --frozen` and turns the hook on | uv has no install-time hook like npm's `prepare`; this is the one command the README names |
+| `scripts/setup.sh` after a clone: `uv sync --locked` and turns the hook on | uv has no install-time hook like npm's `prepare`; this is the one command the README names |
 | The pre-commit hook formats staged files and never commits an unstaged edit | a formatter that re-stages a whole file commits what you had not staged (cases `AM`, `MM`, `RM`) |
-| CI: `uv sync --frozen`, `ruff format --check`, `ruff check` (no `--fix`), tests | the hook can be skipped (`--no-verify`); CI cannot |
+| CI: `uv sync --locked`, `ruff format --check`, `ruff check` (no `--fix`), tests | the hook can be skipped (`--no-verify`); CI cannot |
 
 Any hook manager is fine if it behaves. The plain `.githooks/` script in `assets/` formats and
 commits. The `pre-commit` framework (tested, with a `repo: local` hook calling `scripts/ruff.sh`)
@@ -65,11 +65,14 @@ again: the edit must not be committed), and a staged file next to an unrelated u
 `uv init --bare`, `uv add -r requirements.in` (the direct dependencies, keeping their pins),
 `uv python pin <the version production runs>`, `uv add --dev ruff==<version> pytest==<version>`,
 `[tool.uv] package = false` for an application. Then change every installer: the Dockerfile
-(`uv sync --frozen --no-dev`, or `uv export --frozen --no-dev -o requirements.txt` if the image
+(`uv sync --locked --no-dev`, or `uv export --locked --no-dev -o requirements.txt` if the image
 must stay on pip), CI and docs. Compare `uv tree` with the old file before deleting it.
 
 ## Traps seen in practice
 
+- `uv sync --frozen` is not Bun's `--frozen-lockfile`: it installs from `uv.lock` without checking that
+  the lock still matches `pyproject.toml`, so a dependency added to one and not the other passes
+  (exit 0, nothing installed). `--locked` fails instead; use it in setup, CI, Docker and `uv export`.
 - `uv run ruff` with Ruff missing from the project runs the `ruff` on PATH: it looks pinned and is not.
 - A hook that splits `$staged` on spaces breaks on paths with spaces; the asset says so. If the repo
   has such paths, use a hook manager that passes file lists safely (pre-commit, Lefthook).

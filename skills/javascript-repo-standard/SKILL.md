@@ -1,5 +1,5 @@
 ---
-name: audit-javascript-project
+name: javascript-repo-standard
 description: >-
   Use when creating, adopting or reviewing a JavaScript/TypeScript repository (a package.json at
   its root), or when asked to set up or check its tooling: 'audit this repo', 'does it follow
@@ -8,10 +8,10 @@ description: >-
   checks behaviour in a fresh copy (Bun as package manager, a pinned Biome run only from
   node_modules, a pre-commit hook that never commits unstaged edits, CI that refuses unformatted
   code, Turborepo in a workspace) and fixes what fails in a worktree. Do NOT use for Python
-  repositories (audit-python-project), or for a one-off formatting run.
+  repositories (python-repo-standard), or for a one-off formatting run.
 ---
 
-# Audit a JavaScript project
+# JavaScript repo standard
 
 Every JavaScript/TypeScript repository follows one standard, so any of them can be picked up and
 worked on the same way. The script checks it; this file says how to read the result and fix it.

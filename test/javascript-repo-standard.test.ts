@@ -1,4 +1,4 @@
-// audit-javascript-project against throwaway repositories built from its own assets: the standard setup must pass,
+// javascript-repo-standard's audit against throwaway repositories built from its own assets: the standard setup must pass,
 // other correct hook managers (Husky + lint-staged, Lefthook) must pass the behaviour tests, and each way of getting
 // it wrong must fail the check that names it. Needs the network (bun install).
 import { describe, expect, test } from "bun:test";
@@ -6,7 +6,7 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeF
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-const SKILL = join(import.meta.dir, "../skills/audit-javascript-project");
+const SKILL = join(import.meta.dir, "../skills/javascript-repo-standard");
 const ASSETS = join(SKILL, "assets");
 const TIMEOUT = 180_000;
 
@@ -70,7 +70,7 @@ function audit(mutate: Mutate = () => {}): Result {
 const status = (r: Result, id: string) => r.checks.find((c) => c.id === id)?.status;
 const failing = (r: Result) => r.checks.filter((c) => c.status === "fail").map((c) => `${c.id}: ${c.detail}`);
 
-describe("audit-javascript-project", () => {
+describe("javascript-repo-standard audit", () => {
 	test(
 		"the assets as given pass every required check, hook behaviour included",
 		() => {

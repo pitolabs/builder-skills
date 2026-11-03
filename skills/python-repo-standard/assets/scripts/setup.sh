@@ -4,5 +4,6 @@
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
-uv sync --frozen
+# --locked, not --frozen: --frozen installs from uv.lock without checking it still matches pyproject.toml.
+uv sync --locked
 git config core.hooksPath .githooks

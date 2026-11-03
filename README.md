@@ -5,8 +5,8 @@ OpenCode, oh-my-openagent (OmO) and Claude Code.
 
 | Skill | Use it when |
 |---|---|
-| [`audit-javascript-project`](skills/audit-javascript-project/SKILL.md) | creating, adopting or reviewing a JavaScript/TypeScript repository: Bun, a pinned Biome, a pre-commit hook that never commits unstaged edits, CI that refuses unformatted code, Turborepo in a workspace |
-| [`audit-python-project`](skills/audit-python-project/SKILL.md) | the same for Python: uv, a pinned Ruff, the same hook guarantees, CI |
+| [`javascript-repo-standard`](skills/javascript-repo-standard/SKILL.md) | creating, adopting or reviewing a JavaScript/TypeScript repository: Bun, a pinned Biome, a pre-commit hook that never commits unstaged edits, CI that refuses unformatted code, Turborepo in a workspace |
+| [`python-repo-standard`](skills/python-repo-standard/SKILL.md) | the same for Python: uv, a pinned Ruff, the same hook guarantees, CI |
 | [`capture-lessons`](skills/capture-lessons/SKILL.md) | harvesting lessons from a session and deciding where each belongs (AGENTS.md, a skill, an ADR, nowhere) |
 | [`write-skill`](skills/write-skill/SKILL.md) | writing, reviewing or fixing a skill |
 
