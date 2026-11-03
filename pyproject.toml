@@ -1,0 +1,18 @@
+[project]
+name = "builder-skills"
+version = "0.1.0"
+# The audit scripts are run with uv, which picks a Python matching each script's own requires-python.
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["ruff==0.17.3"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

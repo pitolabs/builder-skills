@@ -1,0 +1,22 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: oven-sh/setup-bun@v2.2.0 # reads "packageManager" from package.json
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.10.11"
+      - run: bun install --frozen-lockfile
+      - run: uv sync --frozen
+      - run: bun run format:check
+      - run: sh scripts/ruff.sh format --check .
+      - run: sh scripts/ruff.sh check .
+      - run: bun run typecheck
+      # The fixture tests install real packages (bun install, uv sync) and run both audits end to end.
+      - run: bun test test/

@@ -1,0 +1,31 @@
+#!/bin/sh
+# Formats the staged files before each commit: JavaScript/TypeScript/JSON with the pinned Biome, Python with the
+# pinned Ruff. The same hook as the two skills' assets, merged for a repository that has both. Turned on by
+# `bun install` ("prepare" sets core.hooksPath to .githooks).
+set -eu
+
+# The formatters rewrite the working-tree file and `git update-index --again` re-stages it whole, so a staged file
+# that also has unstaged edits would get those edits committed. Refuse any path in both the staged and the unstaged
+# diff, whatever its status letters (MM, AM, RM, CM). Each list names a path once, so a path in both is a duplicate.
+both=$({
+  git diff --cached --name-only --diff-filter=ACMR
+  git diff --name-only
+} | sort | uniq -d)
+if [ -n "$both" ]; then
+  echo "pre-commit: these staged files also have unstaged changes; stage them (git add) or set the changes aside first:" >&2
+  printf '%s\n' "$both" | sed 's/^/  /' >&2
+  exit 1
+fi
+
+top=$(git rev-parse --show-toplevel)
+sh "$top/scripts/biome.sh" check --write --staged --files-ignore-unknown=true --no-errors-on-unmatched
+python=$(git diff --cached --name-only --diff-filter=ACMR -- '*.py')
+if [ -n "$python" ]; then
+  # The repo's Python files have no spaces or newlines in their paths.
+  # shellcheck disable=SC2086
+  sh "$top/scripts/ruff.sh" format -- $python
+  # shellcheck disable=SC2086
+  sh "$top/scripts/ruff.sh" check --fix -- $python
+fi
+# Re-stage what the formatters rewrote: only already-staged paths, none of which has unstaged changes (checked above).
+git update-index --again

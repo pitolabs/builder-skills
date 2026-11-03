@@ -1,0 +1,16 @@
+# .github/workflows/ci.yml for a Bun project. Pin actions and Bun by version; the lockfile pins the rest.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: oven-sh/setup-bun@v2.2.0 # with no version given, it reads "packageManager": "bun@x.y.z" from package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run format:check # biome ci: formatting, lint and imports, never writes
+      - run: bun run typecheck
+      - run: bun test

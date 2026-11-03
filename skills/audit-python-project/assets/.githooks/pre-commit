@@ -1,0 +1,28 @@
+#!/bin/sh
+# Formats and lint-fixes the staged Python files with the repo's pinned Ruff before each commit. Turned on by
+# scripts/setup.sh (core.hooksPath .githooks). scripts/ruff.sh runs only the Ruff locked in uv.lock.
+set -eu
+
+# Ruff rewrites the working-tree file and `git update-index --again` re-stages it whole, so a staged file that also
+# has unstaged edits would get those edits committed. Refuse any path in both the staged and the unstaged diff,
+# whatever its status letters (MM, AM, RM, CM). Each list names a path once, so a path in both is a duplicate.
+both=$({
+  git diff --cached --name-only --diff-filter=ACMR
+  git diff --name-only
+} | sort | uniq -d)
+if [ -n "$both" ]; then
+  echo "pre-commit: these staged files also have unstaged changes; stage them (git add) or set the changes aside first:" >&2
+  printf '%s\n' "$both" | sed 's/^/  /' >&2
+  exit 1
+fi
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.py' '*.pyi')
+[ -n "$staged" ] || exit 0
+ruff="$(git rev-parse --show-toplevel)/scripts/ruff.sh"
+# Paths with spaces or newlines would split here; the repo's Python files have neither.
+# shellcheck disable=SC2086
+sh "$ruff" format -- $staged
+# shellcheck disable=SC2086
+sh "$ruff" check --fix -- $staged
+# Re-stage what Ruff rewrote: only already-staged paths, none of which has unstaged changes (checked above).
+git update-index --again

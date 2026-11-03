@@ -1,0 +1,20 @@
+[project]
+name = "example"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = []
+
+# Exact pins: uv.lock pins everything, and these say which Ruff and pytest the project expects.
+[dependency-groups]
+dev = ["pytest==9.2.0", "ruff==0.17.3"]
+
+[tool.uv]
+# Not a package to build; uv sync installs the dependencies only.
+package = false
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# pycodestyle errors, pyflakes, import order, pyupgrade, bugbear.
+select = ["E", "F", "I", "UP", "B"]
