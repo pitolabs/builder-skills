@@ -1,14 +1,15 @@
 ---
 name: javascript-repo-standard
 description: >-
-  Use when creating, adopting or reviewing a JavaScript/TypeScript repository (a package.json at
-  its root), or when asked to set up or check its tooling: 'audit this repo', 'does it follow
-  our standard', 'set up Bun/Biome/the pre-commit hook/CI', 'migrate from npm to Bun', 'add
-  Turborepo to this monorepo', 'why did the hook commit my unstaged change'. Runs a script that
-  checks behaviour in a fresh copy (Bun as package manager, a pinned Biome run only from
-  node_modules, a pre-commit hook that never commits unstaged edits, CI that refuses unformatted
-  code, Turborepo in a workspace) and fixes what fails in a worktree. Do NOT use for Python
-  repositories (python-repo-standard), or for a one-off formatting run.
+  Use ONLY for a JavaScript/TypeScript repository's own tooling, not for work inside it:
+  creating a new repo, adopting an existing one, or setting up, checking or changing its package
+  manager, formatter, pre-commit hook, CI or monorepo layout - 'set up a new TS repo', 'does this
+  repo follow our standard', 'migrate from npm to Bun', 'add Turborepo', 'the hook committed my
+  unstaged change'. Runs an audit script (Bun, a pinned Biome run only from node_modules, a hook
+  that never commits unstaged edits, CI that refuses unformatted code, Turborepo in a workspace)
+  and fixes what fails in a worktree. NOT for everyday work in a repo that already has its
+  tooling: running the formatter, writing or fixing code or tests, adding, removing or bumping a
+  dependency. NOT for Python repositories (python-repo-standard).
 ---
 
 # JavaScript repo standard

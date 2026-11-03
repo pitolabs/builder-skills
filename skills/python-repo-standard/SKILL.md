@@ -1,14 +1,16 @@
 ---
 name: python-repo-standard
 description: >-
-  Use when creating, adopting or reviewing a Python repository (pyproject.toml, requirements*.txt
-  or .py sources at its root), or when asked to set up or check its tooling: 'audit this repo',
-  'does it follow our standard', 'set up uv/Ruff/the pre-commit hook/CI', 'migrate from pip or
-  requirements.txt to uv', 'why did the hook commit my unstaged change'. Runs a script that checks
-  behaviour in a fresh copy (uv with a committed uv.lock and .python-version, a pinned Ruff run
-  only from .venv, a pre-commit hook that never commits unstaged edits, CI that refuses
-  unformatted code) and fixes what fails in a worktree. Do NOT use for JavaScript/TypeScript
-  repositories (javascript-repo-standard), or for a one-off formatting run.
+  Use ONLY for a Python repository's own tooling, not for work inside it: creating a new repo,
+  adopting an existing one, or setting up, checking or changing its package manager, formatter,
+  pre-commit hook or CI - 'set up a new Python service', 'does this repo follow our standard',
+  'migrate from pip/requirements.txt to uv', 'add Ruff and a pre-commit hook', 'the hook committed
+  my unstaged change'. Runs an audit script (uv with a committed uv.lock and .python-version, a
+  pinned Ruff run only from .venv, a hook that never commits unstaged edits, CI that refuses
+  unformatted code) and fixes what fails in a worktree. NOT for everyday work in a repo that
+  already has its tooling: running the formatter, writing or fixing code or tests, adding,
+  removing or bumping a dependency. NOT for JavaScript/TypeScript repositories
+  (javascript-repo-standard).
 ---
 
 # Python repo standard
