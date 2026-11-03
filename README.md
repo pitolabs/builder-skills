@@ -1,8 +1,9 @@
 # builder-skills
 
-Agent skills for building applications and repositories the same way every time. Each one is a
-folder with a `SKILL.md` in the open [Agent Skills](https://agentskills.io/specification) format,
-so any harness that reads that format can load it.
+The Tito agent: its instructions and its skills, the same on a developer's machine and in Tito.
+[`instructions/AGENTS.md`](instructions/AGENTS.md) is the agent's global instructions (how it works in any
+repository, how it proposes options). The skills are folders with a `SKILL.md` in the open
+[Agent Skills](https://agentskills.io/specification) format, so any harness that reads that format can load them.
 
 | Skill | Use it when |
 |---|---|
@@ -18,13 +19,13 @@ it does the right thing. Their `assets/` are tested starting points for what fai
 
 ## Works in
 
-| Harness | Reads skills from | Checked by `scripts/check-load.sh` with |
-|---|---|---|
-| [OpenCode](https://opencode.ai) | `~/.config/opencode/skills/` | `opencode api GET /api/skill` |
-| [Claude Code](https://docs.claude.com/en/docs/claude-code) | `~/.claude/skills/` | the `init` event of `claude -p --output-format stream-json` |
-| [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) (OmO) | `~/.agents/skills/` | `omo -p`, asked for its skill list |
-| [omp](https://github.com/can1357/oh-my-pi) | `~/.claude/skills/`, `~/.agents/skills/`, `~/.config/opencode/skills/` (its discovery providers) | `omp -p`, asked for its skill list |
-| any other Agent Skills client | its own skills folder | link the skill folders there; CI checks every `SKILL.md` against the format's rules |
+| Harness | Reads skills from | Reads the instructions from | Checked by `scripts/check-load.sh` with |
+|---|---|---|---|
+| [OpenCode](https://opencode.ai) | `~/.config/opencode/skills/` | `~/.config/opencode/AGENTS.md` | `opencode api GET /api/skill`; `opencode run`, asked for the instructions' title |
+| [Claude Code](https://docs.claude.com/en/docs/claude-code) | `~/.claude/skills/` | `~/.claude/CLAUDE.md` | the `init` event of `claude -p --output-format stream-json`; `claude -p` (needs a login) |
+| [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) (OmO) | `~/.agents/skills/` | `~/.config/opencode/AGENTS.md` | `omo -p`, asked for its skill list and the title |
+| [omp](https://github.com/can1357/oh-my-pi) | `~/.claude/skills/`, `~/.agents/skills/`, `~/.config/opencode/skills/` (its discovery providers) | `~/.config/opencode/AGENTS.md` (its OpenCode provider) | `omp -p`, asked for its skill list and the title |
+| any other Agent Skills client | its own skills folder | its own global instructions file | link them there; CI checks every `SKILL.md` against the format's rules |
 
 ```text
 $ sh scripts/check-load.sh
@@ -34,11 +35,14 @@ javascript-repo-standard    yes       yes       yes       yes
 public-repo-standard        yes       yes       yes       yes
 python-repo-standard        yes       yes       yes       yes
 write-skill                 yes       yes       yes       yes
+(instructions)              yes       ?         yes       yes
+(- : not installed here; ? : could not ask, e.g. not logged in)
 ```
 
-It asks each installed harness in a fresh process (a running session keeps the list it read at
-start), skips the ones not installed, and exits 1 if one misses a skill. Run it after installing,
-renaming or adding a skill.
+It asks each installed harness in a fresh process (a running session keeps what it read at start), skips the ones
+not installed, and exits 1 if one misses a skill or the instructions. `?` means the harness could not answer (above:
+Claude Code not logged in on that machine). Run it after installing, renaming or adding a skill, or changing the
+instructions' links.
 
 ## Install
 
@@ -47,13 +51,16 @@ git clone https://github.com/pitolabs/builder-skills.git ~/pitolabs/builder-skil
 for s in ~/pitolabs/builder-skills/skills/*/; do
   ln -sfn "${s%/}" ~/.config/opencode/skills/"$(basename "$s")"
 done
+ln -sfn ~/pitolabs/builder-skills/instructions/AGENTS.md ~/.config/opencode/AGENTS.md   # OpenCode, OmO, omp
+ln -sfn ~/pitolabs/builder-skills/instructions/AGENTS.md ~/.claude/CLAUDE.md            # Claude Code
 sh ~/pitolabs/builder-skills/scripts/check-load.sh
 ```
 
 `~/.config/opencode/skills` is the personal skill folder here; `~/.agents/skills` and
 `~/.claude/skills` are links to it, so every harness above sees one copy. Without those links, link
-each skill into each harness's folder. Remove an older copy of a skill before linking it. The
-audits need [Bun](https://bun.com) and [uv](https://docs.astral.sh/uv/).
+each skill into each harness's folder. Move an existing `AGENTS.md` or `CLAUDE.md` aside before linking (anything
+machine-specific in it has no place in the shared instructions). Remove an older copy of a skill before linking it.
+The audits need [Bun](https://bun.com) and [uv](https://docs.astral.sh/uv/).
 
 Update with `git -C ~/pitolabs/builder-skills pull`. Never edit the clone itself.
 
