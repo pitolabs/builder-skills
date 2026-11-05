@@ -42,6 +42,14 @@ Ruff), both from builder-skills. When you create or adopt a repository, or chang
 pre-commit hook or CI, use the matching skill and run its audit; it must pass before you push. Do not bring in another
 package manager or formatter. A repository that is public, or about to be, also follows `public-repo-standard`.
 
+## Obsidian vaults synced by LiveSync
+
+On a Mac, Obsidian's LiveSync syncs only when the Obsidian window gets focus. A file changed or deleted in the vault
+by a shell or another editor stays local until then, and changes from other devices or servers arrive only then too.
+After editing a vault outside Obsidian, bring Obsidian to the front (`open -a Obsidian`), then check that the other
+copy changed. Don't write the other copy by hand as well: LiveSync has no version check, so two writers of one file
+can lose an edit.
+
 ## Proposing solutions
 
 When offering fixes, options or a plan:
