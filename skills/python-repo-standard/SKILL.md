@@ -21,7 +21,7 @@ JavaScript standard's counterpart: uv where that one has Bun, Ruff where it has 
 
 | Rule | Why |
 |---|---|
-| **uv** manages packages and Python: `pyproject.toml`, `uv.lock` and `.python-version` committed; no Poetry/Pipenv/PDM files; a `requirements.txt` only as `uv export` output | one tool, fast installs, the same interpreter and lockfile everywhere |
+| **uv** manages packages and Python: `pyproject.toml`, `uv.lock` and `.python-version` committed; no Poetry/Pipenv/PDM files; no committed `requirements.txt` (an image exports one from `uv.lock` at build time) | one tool, fast installs, the same interpreter and lockfile everywhere; Renovate edits a committed export instead of `uv.lock`, so its PRs drift or fail |
 | **Ruff** formats and lints, pinned (`ruff==x.y.z` in a dependency group), run only through `scripts/ruff.sh` | `uvx ruff`/`uv tool run ruff`/`pipx run ruff` fetch the newest Ruff; `uv run ruff` and a bare `ruff` fall back to whatever is on PATH when the project lacks it |
 | `scripts/setup.sh` after a clone: `uv sync --locked` and turns the hook on | uv has no install-time hook like npm's `prepare`; this is the one command the README names |
 | The pre-commit hook formats staged files and never commits an unstaged edit | a formatter that re-stages a whole file commits what you had not staged (cases `AM`, `MM`, `RM`) |
@@ -72,8 +72,9 @@ again: the edit must not be committed), and a staged file next to an unrelated u
 `uv init --bare`, `uv add -r requirements.in` (the direct dependencies, keeping their pins),
 `uv python pin <the version production runs>`, `uv add --dev ruff==<version> pytest==<version>`,
 `[tool.uv] package = false` for an application. Then change every installer: the Dockerfile
-(`uv sync --locked --no-dev`, or `uv export --locked --no-dev -o requirements.txt` if the image
-must stay on pip), CI and docs. Compare `uv tree` with the old file before deleting it.
+(`uv sync --locked --no-dev`, or, if the image must stay on pip, one `RUN` with a pinned uv image bind-mounted only
+for that step: `uv export --locked --no-dev -o /tmp/requirements.txt && pip install --require-hashes -r
+/tmp/requirements.txt`), CI and docs. Compare `uv tree` with the old file before deleting it.
 
 ## Traps seen in practice
 

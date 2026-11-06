@@ -151,4 +151,9 @@ A PR that bumps a tool in `mise.toml` may arrive without a regenerated `mise.loc
   which wins over any config file: the default profile (what a bare `jactionlint` runs, also with an `actionlint.yaml`
   that sets no profile) adds security and policy rules, zizmor's job here plus `concurrency:` and `timeout-minutes` on
   every workflow.
+- Renovate edits the file that names a version, not the source it is generated from (a `requirements.txt` exported
+  from `uv.lock`, a compose file rendered by a script): the PR fails the regeneration check every time, so automerge
+  never takes it, and with no such check it ships a combination CI never tested. Do not commit generated files that
+  carry versions; when one must stay, add a `customManagers` regex for its source with the same `depName`, so both
+  change in one PR.
 - Auditing the main checkout audits its `HEAD`, which may be behind: pass `--ref origin/main`.

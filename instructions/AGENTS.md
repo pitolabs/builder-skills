@@ -38,7 +38,8 @@ cd ../<repo>-<task>   # then the repo's own setup (bun install, sh scripts/setup
 
 Every repository follows `base-repo-standard` (Renovate on the shared `pitolabs/renovate-config` preset, Dependabot
 alerts, SHA-pinned actions with read-only permissions, the `base` CI job running the mise-pinned gitleaks, jactionlint,
-zizmor, shellcheck and osv-scanner, and a gitleaks pre-commit), plus the standard for its language:
+zizmor, shellcheck and osv-scanner, and a gitleaks pre-commit), plus the standard for each language its projects use,
+wherever they sit (a project only in a subdirectory gets a root Bun workspace or a root `pyproject.toml`):
 `javascript-repo-standard` (Bun, a pinned Biome, Turborepo in a workspace) or `python-repo-standard` (uv, a pinned
 Ruff), all from builder-skills. When you create or adopt a repository, or change its package manager, formatter,
 pre-commit hook, CI, tool pins or Renovate config, use the matching skills and run their audits; they must pass before

@@ -88,4 +88,8 @@ internal dependencies as `"workspace:*"`.
   `prepare` (`"prepare": "husky"`, `"prepare": "lefthook install"`).
 - A repository that ships Biome configs as templates must exclude them (`"!skills/*/assets"`),
   or Biome stops with "Found a nested root configuration".
+- A published package with an `engines.node` floor: Renovate's `node` major PR moves CI's only Node and `@types/node`
+  to the newest, so CI stops testing the floor and the types accept APIs that break consumers on it. Close it; import
+  the built entry points on a Node matrix (the floor exactly, the current LTS, the newest) and cap `@types/node` at the
+  floor's major with an `allowedVersions` rule in `renovate.json`.
 - Auditing the main checkout audits its `HEAD`, which may be behind: pass `--ref origin/main`.
