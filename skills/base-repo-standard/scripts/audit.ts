@@ -2,7 +2,7 @@
 // Audits any repository, whatever its language and visibility, against the builder-skills base standard: Renovate on
 // the shared pitolabs/renovate-config preset (automerge only where CI runs the tests on pull requests), Dependabot
 // alerts, workflows with read-only permissions and SHA-pinned actions, the mise-pinned check tools (gitleaks,
-// actionlint, zizmor, shellcheck, osv-scanner) with a committed mise.lock and a CI job that runs them, a gitleaks
+// jactionlint, zizmor, shellcheck, osv-scanner) with a committed mise.lock and a CI job that runs them, a gitleaks
 // pre-commit hook, and baselines that expire. Checks behaviour too: the `mise run check:*` tasks must pass on a fresh
 // copy, and the hook must commit a clean change and refuse a generated token.
 //
@@ -46,7 +46,7 @@ if (!repo || (refAt >= 0 && !ref) || (ref && workingTree)) {
 const PRESET = "local>pitolabs/renovate-config";
 const TOOLS = [
 	"aqua:gitleaks/gitleaks",
-	"aqua:rhysd/actionlint",
+	"aqua:jdx/jactionlint",
 	"aqua:zizmorcore/zizmor",
 	"aqua:google/osv-scanner",
 	"aqua:koalaman/shellcheck",

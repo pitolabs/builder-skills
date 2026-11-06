@@ -7,7 +7,7 @@ repository, how it proposes options). The skills are folders with a `SKILL.md` i
 
 | Skill | Use it when |
 |---|---|
-| [`base-repo-standard`](skills/base-repo-standard/SKILL.md) | every repository, any language, public or private: Renovate on the shared preset, Dependabot alerts, SHA-pinned actions and read-only permissions, mise-pinned gitleaks/actionlint/zizmor/shellcheck/osv-scanner as CI checks and a gitleaks pre-commit |
+| [`base-repo-standard`](skills/base-repo-standard/SKILL.md) | every repository, any language, public or private: Renovate on the shared preset, Dependabot alerts, SHA-pinned actions and read-only permissions, mise-pinned gitleaks/jactionlint/zizmor/shellcheck/osv-scanner as CI checks and a gitleaks pre-commit |
 | [`javascript-repo-standard`](skills/javascript-repo-standard/SKILL.md) | creating, adopting or reviewing a JavaScript/TypeScript repository's tooling: Bun, a pinned Biome, a pre-commit hook that never commits unstaged edits, CI that refuses unformatted code, Turborepo in a workspace |
 | [`python-repo-standard`](skills/python-repo-standard/SKILL.md) | the same for Python: uv, a pinned Ruff, the same hook guarantees, CI |
 | [`public-repo-standard`](skills/public-repo-standard/SKILL.md) | a repository that is public or about to be: hooks that refuse secrets and personal data before anything is pushed, GitHub push protection, a CI history scan, CodeQL, a `SECURITY.md` with private vulnerability reporting |
@@ -81,7 +81,7 @@ bun test test/                                          # fixture repositories, 
 
 This repository follows its own four standards (all four audits pass on it). Then push the branch
 and open a pull request, or push to `main`; CI runs formatting, lint, typecheck, the tests, the
-base checks (gitleaks, actionlint, zizmor, shellcheck, osv-scanner) and the privacy scan.
+base checks (gitleaks, jactionlint, zizmor, shellcheck, osv-scanner) and the privacy scan.
 
 ## Keeping personal data out
 

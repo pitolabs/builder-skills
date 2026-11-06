@@ -37,7 +37,7 @@ cd ../<repo>-<task>   # then the repo's own setup (bun install, sh scripts/setup
 ## Repository standard
 
 Every repository follows `base-repo-standard` (Renovate on the shared `pitolabs/renovate-config` preset, Dependabot
-alerts, SHA-pinned actions with read-only permissions, the `base` CI job running the mise-pinned gitleaks, actionlint,
+alerts, SHA-pinned actions with read-only permissions, the `base` CI job running the mise-pinned gitleaks, jactionlint,
 zizmor, shellcheck and osv-scanner, and a gitleaks pre-commit), plus the standard for its language:
 `javascript-repo-standard` (Bun, a pinned Biome, Turborepo in a workspace) or `python-repo-standard` (uv, a pinned
 Ruff), all from builder-skills. When you create or adopt a repository, or change its package manager, formatter,

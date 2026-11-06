@@ -91,6 +91,26 @@ describe("base-repo-standard audit", () => {
 	);
 
 	test(
+		"the workflow check accepts current runner labels and refuses an unquoted shell variable in a run step",
+		() => {
+			const newRunner = audit((dir) =>
+				write(dir, ".github/workflows/ci.yml", ciWorkflow().replaceAll("ubuntu-24.04", "ubuntu-26.04")),
+			);
+			expect(check(newRunner, "run.workflows")?.status).toBe("pass");
+			const unquoted = audit((dir) =>
+				write(
+					dir,
+					".github/workflows/ci.yml",
+					`${ciWorkflow()}  echo:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: echo $HOME\n`,
+				),
+			);
+			expect(check(unquoted, "run.workflows")?.status).toBe("fail");
+			expect(check(unquoted, "run.workflows")?.detail).toContain("SC2086");
+		},
+		TIMEOUT,
+	);
+
+	test(
 		"a lockfile with a known-vulnerable dependency fails the vulnerability check",
 		() => {
 			const lockfile = {

@@ -3,7 +3,7 @@ name: base-repo-standard
 description: >-
   Use for the defaults every repository gets, whatever its language and whether it is public
   or private: Renovate on the shared pitolabs/renovate-config preset, Dependabot alerts,
-  SHA-pinned actions with read-only workflow permissions, the mise-pinned gitleaks, actionlint,
+  SHA-pinned actions with read-only workflow permissions, the mise-pinned gitleaks, jactionlint,
   zizmor, shellcheck and osv-scanner run as CI checks, a gitleaks pre-commit hook, baselines
   that expire - 'set up a new repo', 'add Renovate to this repo', 'is Renovate running here',
   'pin the actions', 'CI says zizmor/osv-scanner failed', 'enable automerge', 'install the
@@ -25,7 +25,7 @@ the result and fix it.
 | `renovate.json` extends `local>pitolabs/renovate-config` | one dependency policy for every repository, changed in one place (the preset repository's README says what it sets) |
 | Dependabot alerts on | GitHub's advisory feed; Renovate reads it (`vulnerabilityAlerts`) and opens the fix at once, outside its schedule and hourly limit |
 | Workflows: top-level `permissions: contents: read`, every `uses:` a commit SHA with a `# vX.Y.Z` comment, `persist-credentials: false` on checkouts | a compromised step gets a read-only token; a tag can be moved to other code, a SHA cannot; a persisted token sits in `.git/config` for every later step |
-| `mise.toml` pins gitleaks, actionlint, zizmor, shellcheck and osv-scanner; `mise.lock` holds each download's sha256 per platform | the same binaries on every machine and in CI; a download that differs from the lock fails instead of running |
+| `mise.toml` pins gitleaks, jactionlint, zizmor, shellcheck and osv-scanner; `mise.lock` holds each download's sha256 per platform | the same binaries on every machine and in CI; a download that differs from the lock fails instead of running |
 | CI's `base` job runs the four `check:` tasks (below) | the hook can be skipped and a machine may lack mise; CI cannot be skipped |
 | A pre-commit hook runs gitleaks on the staged changes | a secret is refused before it is a commit; on GitHub Free, private repositories have no secret scanning or push protection |
 | Accepted findings expire: `osv-scanner.toml` ignores carry a date at most 90 days ahead and a reason | an ignore without an end date is a check switched off for good |
@@ -36,7 +36,7 @@ The checks, each a task in `mise.toml` (`mise run check` runs all four):
 | Task | Tool | Catches |
 |---|---|---|
 | `check:secrets` | gitleaks over every commit (`.gitleaks.toml` adds rules when present) | a token or key anywhere in the history |
-| `check:workflows` | actionlint (shellcheck on `run:` steps), then zizmor | workflow errors, unquoted shell, template injection, unpinned actions, write permissions, persisted credentials, known-vulnerable actions (online) |
+| `check:workflows` | jactionlint's `correctness` profile (what actionlint checks: syntax, expressions, runner labels, action inputs, shellcheck on `run:` steps), then zizmor | workflow errors, unquoted shell, template injection, unpinned actions, write permissions, persisted credentials, known-vulnerable actions (online) |
 | `check:shell` | shellcheck on tracked `*.sh` and `.githooks/*` | quoting and portability bugs in scripts |
 | `check:vulns` | osv-scanner over every lockfile | known vulnerabilities, transitive ones included, in `bun.lock` and `uv.lock` too (GitHub's dependency graph reads neither) |
 
@@ -142,6 +142,10 @@ A PR that bumps a tool in `mise.toml` may arrive without a regenerated `mise.loc
 - mise trusts a restored tool cache as-is, without the `mise.lock` check; hence `cache: false` on `jdx/mise-action`.
 - Keep `mise.toml` to `[tools]` and `[tasks]`: `[env]`, templates or path versions make mise ask for `mise trust` in
   every clone, in CI and in the audit's copy.
-- mise's registry marks the short name `actionlint` deprecated in favour of a fork; the explicit
-  `aqua:rhysd/actionlint` key installs the original without a warning.
+- actionlint (`rhysd/actionlint`) stalled after 1.7.12 (March 2026): it does not know newer runner labels such as
+  `ubuntu-26.04`, so Renovate's runner bump failed CI. jactionlint is its maintained fork; its `correctness` profile
+  reported the same findings as actionlint on every pitolabs repository. The task passes `--profile correctness`,
+  which wins over any config file: the default profile (what a bare `jactionlint` runs, also with an `actionlint.yaml`
+  that sets no profile) adds security and policy rules, zizmor's job here plus `concurrency:` and `timeout-minutes` on
+  every workflow.
 - Auditing the main checkout audits its `HEAD`, which may be behind: pass `--ref origin/main`.
