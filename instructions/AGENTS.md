@@ -49,6 +49,10 @@ stays opt-in. A repository that is public, or about to be, also follows `public-
 two-factor
 authentication for everyone.
 
+When you write a script (a tool, a helper an image runs, anything beyond a few lines of shell), write it in TypeScript
+run by Bun, not Python. Exception: inside an image that already ships Node, use that Node when it runs the script
+(test it with that image's `node`: older versions and non-erasable syntax fail), so the image gets no second runtime.
+
 ## Obsidian vaults synced by LiveSync
 
 On a Mac, Obsidian's LiveSync syncs only when the Obsidian window gets focus. A file changed or deleted in the vault
