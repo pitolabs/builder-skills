@@ -336,7 +336,9 @@ else {
 	);
 	if (!steps.some((s) => /\btsc\b|typecheck/.test(s)))
 		add("ci.typecheck", "warn", "CI runs no typecheck", "bun run typecheck (tsc --noEmit)");
-	if (!steps.some((s) => /\bbun test\b|vitest|jest/.test(s))) add("ci.tests", "warn", "CI runs no tests", "bun test");
+	// A test step counts run directly (`bun test`) or through a script (`bun run test`, `turbo run test`).
+	const runsTests = /\b(?:(?:bun|npm|pnpm|yarn) (?:run )?test|turbo (?:run )?test|vitest|jest)\b/;
+	if (!steps.some((s) => runsTests.test(s))) add("ci.tests", "warn", "CI runs no tests", "bun test");
 }
 
 // --- behaviour in a fresh copy ----------------------------------------------------------------------------------------

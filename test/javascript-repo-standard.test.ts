@@ -157,6 +157,24 @@ describe("javascript-repo-standard audit", () => {
 	);
 
 	test(
+		"tests run through a package.json script (bun run test → turbo run test) count; no test step warns",
+		() => {
+			const viaScript = audit((dir, pkg) => {
+				pkg.scripts.test = "turbo run test";
+				const ci = readFileSync(join(ASSETS, "ci.yml"), "utf8").replace(/- run: bun test\n/, "- run: bun run test\n");
+				write(dir, ".github/workflows/ci.yml", ci);
+			});
+			expect(status(viaScript, "ci.tests")).toBeUndefined();
+			const none = audit((dir) => {
+				const ci = readFileSync(join(ASSETS, "ci.yml"), "utf8").replace(/- run: bun test\n/, "");
+				write(dir, ".github/workflows/ci.yml", ci);
+			});
+			expect(status(none, "ci.tests")).toBe("warn");
+		},
+		TIMEOUT,
+	);
+
+	test(
 		"a workspace needs Turborepo; with turbo, turbo.json and .turbo ignored it passes",
 		() => {
 			const addPackage: Mutate = (dir, pkg) => {
