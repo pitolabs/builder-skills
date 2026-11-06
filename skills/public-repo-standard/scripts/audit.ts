@@ -110,13 +110,34 @@ add(
 	"files.scanner",
 	tracked.has(scanner) ? "pass" : "fail",
 	tracked.has(scanner) ? `${scanner} present` : `no ${scanner}`,
-	"copy assets/scripts/privacy-scan.sh and assets/scripts/gitleaks.sh",
+	"copy assets/scripts/privacy-scan.sh; gitleaks comes from base-repo-standard's mise.toml",
 );
 add(
 	"files.rules",
 	tracked.has(".gitleaks.toml") ? "pass" : "fail",
 	tracked.has(".gitleaks.toml") ? ".gitleaks.toml present" : "no .gitleaks.toml: gitleaks has no personal-data rules",
 	"copy assets/.gitleaks.toml",
+);
+const gitleaksPinned = (() => {
+	try {
+		const mise = Bun.TOML.parse(textOf("mise.toml")) as { tools?: Record<string, unknown> };
+		return tracked.has("mise.toml") && "aqua:gitleaks/gitleaks" in (mise.tools ?? {});
+	} catch {
+		return false;
+	}
+})();
+add(
+	"mise.gitleaks",
+	gitleaksPinned ? "pass" : "fail",
+	gitleaksPinned ? "mise.toml pins gitleaks" : "no mise.toml pinning aqua:gitleaks/gitleaks: the scan has no gitleaks",
+	"copy base-repo-standard's assets/mise.toml and mise.lock (that skill's audit checks the rest)",
+);
+const policy = ["SECURITY.md", ".github/SECURITY.md"].find((f) => tracked.has(f));
+add(
+	"files.security-policy",
+	policy ? "pass" : "fail",
+	policy ? `${policy} present` : "no SECURITY.md: a reporter finds no private channel and opens a public issue",
+	"copy assets/SECURITY.md",
 );
 
 // --- CI backstop ----------------------------------------------------------------------------------------------------
@@ -168,6 +189,29 @@ function githubChecks() {
 		`push protection ${on("secret_scanning_push_protection") ? "on: GitHub refuses pushes carrying known token formats" : "off"}`,
 		enable,
 	);
+	const pvr = run(["gh", "api", `repos/${slug}/private-vulnerability-reporting`, "--jq", ".enabled"], source);
+	add(
+		"github.private-vuln-reporting",
+		pvr.out.trim() === "true" ? "pass" : "fail",
+		pvr.out.trim() === "true"
+			? "private vulnerability reporting on: SECURITY.md's channel exists"
+			: "private vulnerability reporting off: SECURITY.md points at a form that is not there",
+		`gh api -X PUT repos/${slug}/private-vulnerability-reporting`,
+	);
+	const codeql = run(["gh", "api", `repos/${slug}/code-scanning/default-setup`], source);
+	const setup: { state?: string; languages?: string[] } = codeql.ok ? JSON.parse(codeql.out) : {};
+	if (setup.state === "configured")
+		add("github.code-scanning", "pass", `CodeQL default setup on (${setup.languages?.join(", ")})`);
+	else if (codeql.ok && !setup.languages?.length) add("github.code-scanning", "skip", "nothing CodeQL can analyse");
+	else
+		add(
+			"github.code-scanning",
+			"fail",
+			codeql.ok
+				? `CodeQL default setup ${setup.state ?? "unknown"} (${setup.languages?.join(", ")})`
+				: `gh api failed: ${codeql.err.trim().split("\n")[0]}`,
+			`gh api -X PATCH repos/${slug}/code-scanning/default-setup --input - <<< '{"state":"configured"}'`,
+		);
 	const secrets = run(["gh", "api", `repos/${slug}/actions/secrets`, "--jq", ".secrets[].name"], source);
 	const has = secrets.ok && secrets.out.split("\n").includes("PRIVACY_BLOCKLIST");
 	add(
@@ -184,6 +228,9 @@ historyScan();
 function historyScan() {
 	const env: Record<string, string> = {};
 	if (!existsSync(join(source, ".gitleaks.toml"))) env.GITLEAKS_CONFIG = join(ASSETS, ".gitleaks.toml");
+	// No mise.toml yet (mise.gitleaks fails): scan with the gitleaks base-repo-standard pins, rather than not at all.
+	if (!existsSync(join(source, "mise.toml")))
+		env.MISE_GLOBAL_CONFIG_FILE = join(ASSETS, "../../base-repo-standard/assets/mise.toml");
 	// What is published: origin's branches as of the last fetch. Local-only commits are the pre-push hook's job, and
 	// leftovers of a history rewrite (old local branches, backups, the reflog) are not public. With no origin yet,
 	// every local ref: all of it would be published by the first push.

@@ -1,7 +1,7 @@
 // public-repo-standard's audit against throwaway repositories built from its own assets: the assets as given must
 // pass, and each realistic way of getting the protection wrong must fail the check that names it. Offline (no GitHub
-// settings); needs the network once, for the pinned gitleaks download. Leaks are generated at run time, so this file
-// carries none.
+// settings); needs mise, and the network once for the pinned gitleaks download. Leaks are generated at run time, so
+// this file carries none.
 import { describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 
 const SKILL = join(import.meta.dir, "../skills/public-repo-standard");
 const ASSETS = join(SKILL, "assets");
+const BASE_ASSETS = join(import.meta.dir, "../skills/base-repo-standard/assets");
 const TIMEOUT = 180_000;
 const NOREPLY = "1+fixture@users.noreply.github.com";
 // Built at run time: a literal personal-looking address in this file would be refused by the repository's own scan.
@@ -39,15 +40,17 @@ function audit(mutate: (dir: string) => void = () => {}, history: (dir: string) 
 	const dir = join(base, "repo");
 	try {
 		for (const f of [
-			"scripts/gitleaks.sh",
 			"scripts/privacy-scan.sh",
 			".gitleaks.toml",
 			".githooks/pre-commit",
 			".githooks/pre-push",
+			"SECURITY.md",
 		]) {
 			mkdirSync(dirname(join(dir, f)), { recursive: true });
 			cpSync(join(ASSETS, f), join(dir, f));
 		}
+		// gitleaks is the one base-repo-standard pins (privacy-scan.sh runs it through mise).
+		for (const f of ["mise.toml", "mise.lock"]) cpSync(join(BASE_ASSETS, f), join(dir, f));
 		write(dir, ".github/workflows/ci.yml", ciWorkflow());
 		write(dir, "README.md", "# fixture\n");
 		mutate(dir);

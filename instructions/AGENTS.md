@@ -36,11 +36,16 @@ cd ../<repo>-<task>   # then the repo's own setup (bun install, sh scripts/setup
 
 ## Repository standard
 
-Every JavaScript/TypeScript and Python repository follows one standard, so any of them can be picked up the same way:
-`javascript-repo-standard` (Bun, a pinned Biome, Turborepo in a workspace) and `python-repo-standard` (uv, a pinned
-Ruff), both from builder-skills. When you create or adopt a repository, or change its package manager, formatter,
-pre-commit hook or CI, use the matching skill and run its audit; it must pass before you push. Do not bring in another
-package manager or formatter. A repository that is public, or about to be, also follows `public-repo-standard`.
+Every repository follows `base-repo-standard` (Renovate on the shared `pitolabs/renovate-config` preset, Dependabot
+alerts, SHA-pinned actions with read-only permissions, the `base` CI job running the mise-pinned gitleaks, actionlint,
+zizmor, shellcheck and osv-scanner, and a gitleaks pre-commit), plus the standard for its language:
+`javascript-repo-standard` (Bun, a pinned Biome, Turborepo in a workspace) or `python-repo-standard` (uv, a pinned
+Ruff), all from builder-skills. When you create or adopt a repository, or change its package manager, formatter,
+pre-commit hook, CI, tool pins or Renovate config, use the matching skills and run their audits; they must pass before
+you push. Do not bring in another package manager, formatter, tool manager or dependency bot. Renovate automerge is
+opt-in (`:automerge`, `:automerge-minor`) and only for a repository whose CI runs its tests on pull requests. A
+repository that is public, or about to be, also follows `public-repo-standard`. The org requires two-factor
+authentication for everyone.
 
 ## Obsidian vaults synced by LiveSync
 

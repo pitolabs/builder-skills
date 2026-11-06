@@ -1,0 +1,21 @@
+# A job for .github/workflows/ci.yml, which also needs, at the top level:
+#   permissions:
+#     contents: read
+# Every `uses:` is a commit SHA with a `# vX.Y.Z` comment (a tag can be re-pushed; Renovate keeps both current).
+# `cache: false`: mise checks each download against mise.lock, but a restored tool cache would be trusted as-is.
+  base:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks scans every commit
+          persist-credentials: false
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+        with:
+          cache: false # tools are verified against mise.lock on every download; a restored cache is not
+      - run: mise run check:secrets
+      - run: mise run check:workflows
+        env:
+          GH_TOKEN: ${{ github.token }} # zizmor's online audits (known-vulnerable-actions, stale refs)
+      - run: mise run check:shell
+      - run: mise run check:vulns

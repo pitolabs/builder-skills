@@ -1,11 +1,19 @@
 # A job for .github/workflows/ci.yml. A backstop, not prevention: when it runs, the commits are already public. It
-# catches what a machine without the hooks pushed, and new rules applied to old history.
+# catches what a machine without the hooks pushed, and new rules applied to old history. privacy-scan.sh runs the
+# gitleaks pinned in mise.toml (base-repo-standard), hence the mise step.
   privacy:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # every commit, not only the last one
+          persist-credentials: false
+          # A pull request's own commits, not the test merge GitHub makes for it: that one is authored with the
+          # opener's GitHub e-mail setting and never reaches main.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+        with:
+          cache: false # tools are verified against mise.lock on every download; a restored cache is not
       - run: sh scripts/privacy-scan.sh --history
         env:
           # Repository secret: the blocklist's text (gh secret set PRIVACY_BLOCKLIST < ~/.config/privacy/blocklist.txt).

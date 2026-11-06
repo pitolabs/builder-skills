@@ -1,15 +1,20 @@
-# .github/workflows/ci.yml for a Bun project. Pin actions and Bun by version; the lockfile pins the rest.
+# .github/workflows/ci.yml for a Bun project. Actions are pinned by commit SHA (Renovate keeps the SHA and the
+# version comment current) and Bun by version; the lockfile pins the rest. The token is read-only.
 name: ci
 on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
   checks:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: oven-sh/setup-bun@v2.2.0 # with no version given, it reads "packageManager": "bun@x.y.z" from package.json
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0 (no version given: reads "packageManager": "bun@x.y.z")
       - run: bun install --frozen-lockfile
       - run: bun run format:check # biome ci: formatting, lint and imports, never writes
       - run: bun run typecheck

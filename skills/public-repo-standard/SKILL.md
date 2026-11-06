@@ -1,15 +1,17 @@
 ---
 name: public-repo-standard
 description: >-
-  Use ONLY for keeping secrets and personal data out of a repository that is public or about to
-  be made public: 'make this repo public', 'check this public repo for leaks', 'protect it from
+  Use ONLY for the extra protections of a repository that is public or about to be made
+  public: 'make this repo public', 'check this public repo for leaks', 'protect it from
   pushing personal data', 'set up gitleaks/push protection', 'did we publish a token or a phone
-  number', 'my commits show my e-mail'. Runs an audit script that tests the protections in a
-  fresh copy (pre-commit and pre-push hooks scanning with a pinned gitleaks, personal-data rules,
-  a noreply identity check and a private blocklist; GitHub secret scanning and push protection;
-  a CI history scan as backstop) and scans the whole published history; fixes what fails in a
-  worktree. NOT for private repositories that stay private, and NOT for rotating a leaked
-  credential (do that first, at the provider).
+  number', 'my commits show my e-mail', 'add a security policy', 'turn on CodeQL'. Runs an audit
+  script that tests the protections in a fresh copy (pre-commit and pre-push hooks scanning with
+  the mise-pinned gitleaks, personal-data rules, a noreply identity check and a private
+  blocklist; GitHub secret scanning and push protection; a CI history scan as backstop; CodeQL
+  default setup; SECURITY.md with private vulnerability reporting) and scans the whole published
+  history; fixes what fails in a worktree. NOT for what every repository gets, public or not
+  (base-repo-standard), and NOT for rotating a leaked credential (do that first, at the
+  provider).
 ---
 
 # Public repo standard
@@ -24,12 +26,14 @@ is what runs **before** the push:
 | `pre-push` hook: the same scan over **every** outgoing commit | `git push`, before anything leaves | everything about to be published, commits made with `--no-verify` included | **the barrier** |
 | GitHub secret scanning + push protection | on GitHub, before it accepts the push | known token formats only | server-side barrier for tokens |
 | CI job: `privacy-scan.sh --history` | after the push | anything a machine without the hooks pushed; new rules on old history | backstop |
+| CodeQL default setup (free on public repositories) | every push | injection and dataflow bugs in TS/Python and in workflows | backstop |
+| `SECURITY.md` + private vulnerability reporting | always | gives reporters a private channel (OSPS Baseline VM-02/VM-03) | contact |
 
 `privacy-scan.sh` runs three checks, and nothing it prints shows a list entry: gitleaks redacts the secrets it finds,
 and every line of output (file names, gitleaks' `File:` and `Fingerprint:` lines, e-mail addresses) has list entries
 replaced by `***`, since a file may be named after a person and an author e-mail may be an entry:
 
-1. **gitleaks**, pinned (`scripts/gitleaks.sh` downloads the release once and checks its sha256), with
+1. **gitleaks**, pinned in `mise.toml` (from base-repo-standard; mise checks the download against `mise.lock`), with
    its secret rules plus `.gitleaks.toml`'s personal-data rules: Brazilian phone numbers, e-mail
    addresses (not example domains or GitHub noreply), IPv4 outside loopback and documentation ranges,
    and `/Users/<name>/` or `/home/<name>/` paths.
@@ -50,7 +54,7 @@ bun "$audit" <repo>                      # HEAD's hooks + GitHub settings + the 
 bun "$audit" <repo> --working-tree       # your uncommitted fix
 ```
 
-It needs `bun`, `git`, `gh` (logged in; `--offline` skips the GitHub checks) and the network on
+It needs `bun`, `git`, `mise`, `gh` (logged in; `--offline` skips the GitHub checks) and the network on
 first use (the gitleaks download). The hook tests run on a snapshot in a temporary directory: they
 activate the hooks the way a clone does (`scripts/setup.sh`, else `bun install`, else
 `core.hooksPath .githooks`), then commit generated leaks (a GitHub token, a phone number, an e-mail
@@ -65,14 +69,16 @@ or every local ref when nothing has been pushed yet.
 ## Fix what fails
 
 1. Work in a worktree from the latest main (the global rule).
-2. Copy from `assets/`: `scripts/gitleaks.sh`, `scripts/privacy-scan.sh`, `.gitleaks.toml`,
-   `.githooks/pre-push`; put `sh "$(git rev-parse --show-toplevel)/scripts/privacy-scan.sh" --staged`
+2. Copy from `assets/`: `scripts/privacy-scan.sh`, `.gitleaks.toml`, `.githooks/pre-push`, `SECURITY.md`, and
+   `mise.toml` + `mise.lock` from base-repo-standard (they pin gitleaks); put `sh "$(git rev-parse --show-toplevel)/scripts/privacy-scan.sh" --staged`
    **first** in the existing pre-commit hook (or copy `assets/.githooks/pre-commit` if there is none);
    add the job in `assets/ci-privacy.yml`. With Husky or Lefthook, call the same two scripts from
    their pre-commit and pre-push.
 3. GitHub: `gh api -X PATCH repos/<owner>/<repo> --input -` with
    `{"security_and_analysis":{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"enabled"}}}`,
-   and `gh secret set PRIVACY_BLOCKLIST --repo <owner>/<repo> < ~/.config/privacy/blocklist.txt`.
+   `gh secret set PRIVACY_BLOCKLIST --repo <owner>/<repo> < ~/.config/privacy/blocklist.txt`,
+   `gh api -X PUT repos/<owner>/<repo>/private-vulnerability-reporting` (the channel `SECURITY.md` names), and
+   `gh api -X PATCH repos/<owner>/<repo>/code-scanning/default-setup --input - <<< '{"state":"configured"}'` (CodeQL).
 4. Identity: `git config user.email <id>+<login>@users.noreply.github.com` in the repository
    (`gh api user --jq .id`), so new commits pass.
 5. Audit again with `--working-tree`, commit, push (the new pre-push hook runs), audit once more.
@@ -89,6 +95,12 @@ why the hooks matter more than the backstop.
   passes gitleaks and is published anyway. The identity check exists for this.
 - A blocklist entry that is the owner's own public name (the author name on every commit) refuses
   every push. Keep the owner's public identity out of the list.
+- Commits GitHub makes for you (the test merge of a pull request, a merge, squash or rebase done on GitHub, a web
+  edit) record you with your GitHub e-mail setting, not your git config: with "Keep my email addresses private" off
+  (github.com/settings/emails), a rebase merge keeps the noreply author but records your primary e-mail as committer,
+  and `gh pr merge --author-email` refuses the noreply address. Turn the setting on before merging on GitHub, or
+  push the tested branch to `main` where no ruleset requires pull requests. The CI job checks out a pull request's
+  own commits, not its test merge. Renovate's merges carry its bot identity, committed by `GitHub <noreply@github.com>`.
 - A pre-push hook that scans only the last commit (`git show`, `HEAD~1..HEAD`) lets a leak through
   when a clean commit sits on top of it, and a new branch has no remote sha to diff against. The
   asset scans `<remote sha>..<local sha>`, or `<local sha> --not --remotes` for a new branch.
