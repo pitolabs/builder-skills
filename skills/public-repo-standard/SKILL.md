@@ -99,8 +99,10 @@ why the hooks matter more than the backstop.
   edit) record you with your GitHub e-mail setting, not your git config: with "Keep my email addresses private" off
   (github.com/settings/emails), a rebase merge keeps the noreply author but records your primary e-mail as committer,
   and `gh pr merge --author-email` refuses the noreply address. Turn the setting on before merging on GitHub, or
-  push the tested branch to `main` where no ruleset requires pull requests. The CI job checks out a pull request's
-  own commits, not its test merge. Renovate's merges carry its bot identity, committed by `GitHub <noreply@github.com>`.
+  merge locally: push the pull request's tested head to `main` (`git push origin origin/<branch>:main`, a
+  fast-forward); GitHub records the pull request as merged, also under a ruleset that requires pull requests and
+  checks, and the commits keep your git identity. The CI job checks out a pull request's own commits, not its test
+  merge. Renovate's merges carry its bot identity, committed by `GitHub <noreply@github.com>`.
 - A pre-push hook that scans only the last commit (`git show`, `HEAD~1..HEAD`) lets a leak through
   when a clean commit sits on top of it, and a new branch has no remote sha to diff against. The
   asset scans `<remote sha>..<local sha>`, or `<local sha> --not --remotes` for a new branch.
