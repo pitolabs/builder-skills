@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // Audits any repository, whatever its language and visibility, against the builder-skills base standard: Renovate on
-// the shared pitolabs/renovate-config preset (automerge only where CI runs the tests on pull requests), Dependabot
+// the shared pitolabs/renovate-config preset plus its automerge preset (CI must run the tests on pull requests), Dependabot
 // alerts, workflows with read-only permissions and SHA-pinned actions, the mise-pinned check tools (gitleaks,
 // jactionlint, zizmor, shellcheck, osv-scanner) with a committed mise.lock and a CI job that runs them, a gitleaks
 // pre-commit hook, and baselines that expire. Checks behaviour too: the `mise run check:*` tasks must pass on a fresh
@@ -234,23 +234,30 @@ const triggers = (doc: Table | undefined): string[] => {
 	return typeof on === "string" ? [on] : Array.isArray(on) ? on.map(String) : Object.keys(table(on));
 };
 
-const automergePresets = extendsList.filter((e) => e === `${PRESET}:automerge` || e === `${PRESET}:automerge-minor`);
-if (!automergePresets.length) add("renovate.automerge", "pass", "no automerge (opt in once CI runs tests on PRs)");
-else {
-	const tested = workflows.find(
-		({ doc }) =>
-			triggers(doc).includes("pull_request") &&
-			jobsOf(doc).some((j) => j.steps.some((s) => TEST_STEP.test(`${s.run ?? ""} ${s.with?.args ?? ""}`))),
+const AUTOMERGE = `${PRESET}:automerge`;
+const automergePresets = extendsList.filter((e) => e === AUTOMERGE || e === `${AUTOMERGE}-minor`);
+const tested = workflows.find(
+	({ doc }) =>
+		triggers(doc).includes("pull_request") &&
+		jobsOf(doc).some((j) => j.steps.some((s) => TEST_STEP.test(`${s.run ?? ""} ${s.with?.args ?? ""}`))),
+);
+if (!renovate)
+	add("renovate.automerge", "fail", "no parsable renovate.json, so no automerge", "copy assets/renovate.json");
+else if (!extendsList.includes(AUTOMERGE))
+	add(
+		"renovate.automerge",
+		"fail",
+		`${renovateFile} does not extend ${AUTOMERGE}`,
+		`make CI run the repository's tests on pull_request, then add "${AUTOMERGE}" to "extends"`,
 	);
-	if (tested) add("renovate.automerge", "pass", `${automergePresets.join(", ")}; ${tested.file} runs tests on PRs`);
-	else
-		add(
-			"renovate.automerge",
-			"fail",
-			`automerge needs tests on pull requests: no workflow with a pull_request trigger runs a test step (${automergePresets.join(", ")})`,
-			"run the tests in CI on pull_request, or drop the :automerge presets",
-		);
-}
+else if (tested) add("renovate.automerge", "pass", `${automergePresets.join(", ")}; ${tested.file} runs tests on PRs`);
+else
+	add(
+		"renovate.automerge",
+		"fail",
+		`automerge needs tests on pull requests: no workflow with a pull_request trigger runs a test step (${automergePresets.join(", ")})`,
+		"run the repository's tests in CI on pull_request",
+	);
 
 if (!workflowFiles.length)
 	add(

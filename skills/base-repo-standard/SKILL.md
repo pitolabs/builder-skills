@@ -23,6 +23,7 @@ the result and fix it.
 | Rule | Why |
 |---|---|
 | `renovate.json` extends `local>pitolabs/renovate-config` | one dependency policy for every repository, changed in one place (the preset repository's README says what it sets) |
+| `renovate.json` also extends `local>pitolabs/renovate-config:automerge`, and CI runs the repository's tests on pull requests | patch, pin and digest-pin updates of dependencies at 1.0 or later and the weekly lockfile refresh merge themselves on green CI, so PRs do not pile up; green CI means something only if the tests run on the PR |
 | Dependabot alerts on | GitHub's advisory feed; Renovate reads it (`vulnerabilityAlerts`) and opens the fix at once, outside its schedule and hourly limit |
 | Workflows: top-level `permissions: contents: read`, every `uses:` a commit SHA with a `# vX.Y.Z` comment, `persist-credentials: false` on checkouts | a compromised step gets a read-only token; a tag can be moved to other code, a SHA cannot; a persisted token sits in `.git/config` for every later step |
 | `mise.toml` pins gitleaks, jactionlint, zizmor, shellcheck and osv-scanner; `mise.lock` holds each download's sha256 per platform | the same binaries on every machine and in CI; a download that differs from the lock fails instead of running |
@@ -72,7 +73,8 @@ organization's 2FA requirement.
 
 1. Work in a worktree from the latest main (the global rule).
 2. Copy from `assets/`:
-   - `mise.toml` (keep tools the repository already pins there) and `renovate.json`;
+   - `mise.toml` (keep tools the repository already pins there) and `renovate.json` (it extends `:automerge`: the
+     audit fails until CI runs the repository's tests on pull requests, so add them first);
    - `.githooks/pre-commit`, or its two lines first in an existing hook. A public repository's
      `privacy-scan.sh --staged` line already runs the same scan: nothing to add there;
    - `scripts/setup.sh` only for a repository with neither a `package.json` (its `prepare` sets `core.hooksPath`)
@@ -111,13 +113,14 @@ holds PyPI releases three days too, labels majors `major-update`, and labels dig
 an upstream re-push) `upstream-repush` and never automerges them. Repository-specific managers and groups stay in the
 repository's `renovate.json`.
 
-**Automerge is opt-in**, per repository, in `extends`:
+**Automerge is part of the standard**, in `extends`:
 
-- `local>pitolabs/renovate-config:automerge`: patch, pin and digest-pin updates of dependencies at 1.0 or later, and
-  the weekly lockfile refresh, merge once CI is green. Only where CI runs the repository's tests on pull requests (the
-  audit checks it). Start without it and opt in after watching one update go from PR to tests to a manual merge.
-- `local>pitolabs/renovate-config:automerge-minor`: minors too. Only where a minor cannot reach production unseen
-  (e2e tests, an upstream guard).
+- `local>pitolabs/renovate-config:automerge` (required): patch, pin and digest-pin updates of dependencies at 1.0 or
+  later, and the weekly lockfile refresh, merge once CI is green, so these PRs do not pile up. It is only safe where CI
+  runs the repository's tests on pull requests, so the audit fails without the tests as well as without the preset: add
+  the tests to CI first. Digest updates (`upstream-repush`), minors, majors and 0.x dependencies still wait for a human.
+- `local>pitolabs/renovate-config:automerge-minor` (optional, opt-in): minors too. Only where a minor cannot reach
+  production unseen (e2e tests, an upstream guard).
 
 How it runs: the Mend-hosted app runs every few hours (about 4) and automerges one PR per branch per run; the others
 wait for the next run. To run it now, tick the checkbox at the bottom of the Dependency Dashboard issue.

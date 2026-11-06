@@ -30,6 +30,8 @@ function write(dir: string, file: string, text: string, mode?: number) {
 
 const ciWorkflow = () =>
 	`name: ci\non: [push, pull_request]\npermissions:\n  contents: read\njobs:\n${readFileSync(join(ASSETS, "ci-base.yml"), "utf8")}`;
+// The tests job a repository with tests has: what lets :automerge pass.
+const testJob = "  test:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: bun test\n";
 const extending = (...presets: string[]) =>
 	JSON.stringify({
 		extends: ["local>pitolabs/renovate-config", ...presets.map((p) => `local>pitolabs/renovate-config:${p}`)],
@@ -44,7 +46,7 @@ function audit(mutate: (dir: string) => void = () => {}, behavior = true): Resul
 			mkdirSync(dirname(join(dir, f)), { recursive: true });
 			cpSync(join(ASSETS, f), join(dir, f));
 		}
-		write(dir, ".github/workflows/ci.yml", ciWorkflow());
+		write(dir, ".github/workflows/ci.yml", `${ciWorkflow()}${testJob}`);
 		write(dir, "README.md", "# fixture\n");
 		mutate(dir);
 		sh(["git", "init", "-q", "-b", "main"], dir);
@@ -138,29 +140,28 @@ describe("base-repo-standard audit", () => {
 		expect(check(r, "renovate.config")?.status).toBe("fail");
 	});
 
-	test("automerge without tests on pull requests fails until CI runs them", () => {
-		const automerge = (dir: string) => write(dir, "renovate.json", extending("automerge"));
-		const untested = audit(automerge, false);
+	test("automerge is required, and fails until CI runs the tests on pull requests", () => {
+		// The asset's renovate.json already extends :automerge; the base fixture's CI has no tests.
+		const untested = audit((dir) => write(dir, ".github/workflows/ci.yml", ciWorkflow()), false);
 		expect(check(untested, "renovate.automerge")?.status).toBe("fail");
-		const tested = audit((dir) => {
-			automerge(dir);
-			write(
-				dir,
-				".github/workflows/ci.yml",
-				`${ciWorkflow()}  test:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: bun test\n`,
-			);
-		}, false);
+		expect(check(untested, "renovate.automerge")?.detail).toContain("tests on pull requests");
+		const tested = audit(() => {}, false);
 		expect(check(tested, "renovate.automerge")?.status).toBe("pass");
 		// The same test step in a workflow that never runs on pull requests does not count.
-		const pushOnly = audit((dir) => {
-			automerge(dir);
-			write(
-				dir,
-				".github/workflows/ci.yml",
-				`${ciWorkflow().replace("[push, pull_request]", "[push]")}  test:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: bun test\n`,
-			);
-		}, false);
+		const pushOnly = audit(
+			(dir) =>
+				write(dir, ".github/workflows/ci.yml", `${ciWorkflow().replace("[push, pull_request]", "[push]")}${testJob}`),
+			false,
+		);
 		expect(check(pushOnly, "renovate.automerge")?.status).toBe("fail");
+		// Without the preset the standard is not met, tests or not; :automerge-minor alone does not replace it.
+		const without = audit((dir) => write(dir, "renovate.json", extending()), false);
+		expect(check(without, "renovate.automerge")?.status).toBe("fail");
+		expect(check(without, "renovate.automerge")?.detail).toContain("does not extend");
+		const minorOnly = audit((dir) => write(dir, "renovate.json", extending("automerge-minor")), false);
+		expect(check(minorOnly, "renovate.automerge")?.status).toBe("fail");
+		const both = audit((dir) => write(dir, "renovate.json", extending("automerge", "automerge-minor")), false);
+		expect(check(both, "renovate.automerge")?.status).toBe("pass");
 	});
 
 	test("an action pinned by tag fails, a SHA-pinned one passes", () => {
