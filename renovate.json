@@ -1,4 +1,12 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["local>pitolabs/renovate-config", "local>pitolabs/renovate-config:automerge"]
+	"extends": ["local>pitolabs/renovate-config", "local>pitolabs/renovate-config:automerge"],
+	"packageRules": [
+		{
+			"description": "Hold Python at 3.14: 3.15 is still an alpha (3.15.0a7) and pyyaml 6.0.3, which pre-commit pulls in, has no 3.15 wheel and does not build from source there, so the python-repo-standard audit tests fail. Lift when a stable 3.15 and a pyyaml that supports it exist.",
+			"matchManagers": ["pyenv"],
+			"matchPackageNames": ["python"],
+			"allowedVersions": "/^3\\.1[0-4]/"
+		}
+	]
 }
