@@ -12,6 +12,7 @@ repository, how it proposes options). The skills are folders with a `SKILL.md` i
 | [`python-repo-standard`](skills/python-repo-standard/SKILL.md) | the same for Python: uv, a pinned Ruff, the same hook guarantees, CI |
 | [`public-repo-standard`](skills/public-repo-standard/SKILL.md) | a repository that is public or about to be: hooks that refuse secrets and personal data before anything is pushed, GitHub push protection, a CI history scan, CodeQL, a `SECURITY.md` with private vulnerability reporting |
 | [`readme-standard`](skills/readme-standard/SKILL.md) | writing or rewriting a package's README: welcome first (banner, badges, pitch, features, a quick start that compiles), depth moved into `docs/`, neutral example names |
+| [`typst-pdf`](skills/typst-pdf/SKILL.md) | turning a Markdown report, proposal or contract into a print-quality PDF with a pinned Typst: cover, contents, header, "Página X de Y", hyphenated pt-BR text, tables |
 | [`capture-lessons`](skills/capture-lessons/SKILL.md) | harvesting lessons from a session and deciding where each belongs (AGENTS.md, a skill, an ADR, nowhere) |
 | [`write-skill`](skills/write-skill/SKILL.md) | writing, reviewing or fixing a skill |
 
