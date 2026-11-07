@@ -2,8 +2,11 @@
 // (or "Page X of Y") in the footer, justified text hyphenated for the document's language, tables with a dark header
 // row and zebra rows. Edit this file to change the look of every PDF the skill makes.
 //
-// meta.json (written by pdf.ts from the Markdown's frontmatter): title, subtitle, author, cover_lines, cover, footer,
-// toc, lang, region, and parts (the Markdown split at each <!-- pagebreak --> line).
+// meta.json (written by the caller from the Markdown's frontmatter): title, subtitle, author, cover_lines, cover,
+// header, footer, toc, lang, region, and parts (the Markdown split at each <!-- pagebreak --> line).
+//
+// Shared: pitomastra's send_pdf compiles this same file, pinned by commit and sha256 in its scripts/typst.sh, with
+// cover and header off. Keep it free of anything that reads files other than meta.json and the parts.
 #import "@preview/cmarker:VERSION"
 
 #let meta = json("meta.json")
@@ -22,7 +25,7 @@
 #set page(
   paper: "a4",
   margin: (x: 22mm, top: 24mm, bottom: 22mm),
-  header: context if title != none and counter(page).get().first() > 0 {
+  header: context if title != none and get("header", default: true) and counter(page).get().first() > 0 {
     align(right, text(8pt, fill: luma(130), title))
   },
   footer: context align(center, text(8pt, fill: luma(130))[

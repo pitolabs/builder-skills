@@ -5,10 +5,10 @@ description: >-
   frontmatter, table of contents, running header, "Página X de Y" footer, justified and hyphenated text (pt-BR by
   default, any language), tables with header rows, page breaks on request. Use for reports, diagnoses, proposals,
   contracts or any document someone will read or print — 'gera um PDF do relatório', 'export this markdown as PDF',
-  'make a PDF of the diagnosis', 'converte para PDF em português'. Prefer it over browser-based Markdown-to-PDF tools
+  'make a PDF of the diagnosis', 'converte para PDF em português'. It replaces browser-based Markdown-to-PDF tools
   (md-to-pdf, Chrome printing), whose page breaks, hyphenation and fonts are weaker. Do NOT use for slide decks
-  (marp), for filling or editing an existing PDF, or for a PDF an agent sends on WhatsApp from pitomastra
-  (send_pdf, its own template and safety rules).
+  (marp) or for filling or editing an existing PDF. pitomastra's send_pdf tool uses the same template through its
+  own pinned copy; change it here, then bump that pin.
 ---
 
 # Markdown to PDF with Typst
@@ -81,7 +81,10 @@ change `assets/template.typ` only for something every document should get.
 
 - **Look:** `assets/template.typ` (page, fonts, colours, cover, header, footer, tables). It is ordinary Typst; its
   header comment lists the metadata it reads.
+- **Shared with pitomastra:** its WhatsApp `send_pdf` compiles this same template (cover and header off), downloaded
+  by commit and sha256 in its `scripts/typst.sh`. After changing the template here and pushing, update
+  `TEMPLATE_COMMIT` and `TEMPLATE_SHA256` there; until then its PDFs keep the old look.
 - **Versions:** `TYPST_VERSION`, `CMARKER_VERSION` and their sha256 at the top of `scripts/pdf.ts`. Take the sha256
   from the Typst release's asset digests and from the downloaded cmarker package; the next run replaces the cache.
-  pitomastra's `scripts/typst.sh` pins the same versions for `send_pdf`: move both together.
+  pitomastra's `scripts/typst.sh` pins the same versions: move both together.
 - **Test:** `bun test test/typst-pdf.test.ts` in this repository renders a fixture with every feature above.
