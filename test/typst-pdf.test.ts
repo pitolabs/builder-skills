@@ -1,7 +1,7 @@
 // typst-pdf: the pinned Typst and cmarker render a Markdown document with every feature the skill documents, and the
 // Markdown stays data. Downloads Typst once into node_modules/.cache/typst-pdf.
 import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -98,5 +98,12 @@ describe("typst-pdf", () => {
 	test("an image outside the document's folder cannot be read", async () => {
 		const dir = folder({ "doc.md": "![x](../../etc/hosts)\n" });
 		await expect(renderPdf(join(dir, "doc.md"), join(dir, "doc.pdf"), typst)).rejects.toThrow();
+	});
+
+	test("an image that is a symlink to a file outside the document's folder is refused", async () => {
+		const secret = folder({ "secret.png": PNG });
+		const dir = folder({ "doc.md": "![x](img.png)\n" });
+		symlinkSync(join(secret, "secret.png"), join(dir, "img.png"));
+		await expect(renderPdf(join(dir, "doc.md"), join(dir, "doc.pdf"), typst)).rejects.toThrow(/outside the document/);
 	});
 });

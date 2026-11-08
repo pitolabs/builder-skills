@@ -8,9 +8,18 @@
 // is a fresh temp folder holding only the template, the Markdown parts and the local images the Markdown names, and
 // only Typst's embedded fonts are used (the same PDF on every machine).
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	realpathSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { dirname, isAbsolute, join, normalize, resolve } from "node:path";
+import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
 
 export const TYPST_VERSION = "0.15.1";
 export const CMARKER_VERSION = "0.1.8";
@@ -171,11 +180,16 @@ export async function renderPdf(input: string, output: string, typst?: Typst): P
 		parts.forEach((part, i) => {
 			writeFileSync(join(root, names[i] as string), part);
 		});
+		// Symlinks are resolved first: an image (or a folder on its path) that points outside the document's folder is
+		// refused, so a crafted link cannot pull another file into the PDF.
+		const folder = realpathSync(dirname(source));
 		for (const img of localImages(body)) {
 			const from = join(dirname(source), img);
 			if (!existsSync(from)) throw new Error(`typst-pdf: image not found: ${img}`);
+			const real = realpathSync(from);
+			if (!real.startsWith(folder + sep)) throw new Error(`typst-pdf: image outside the document's folder: ${img}`);
 			mkdirSync(dirname(join(root, img)), { recursive: true });
-			copyFileSync(from, join(root, img));
+			copyFileSync(real, join(root, img));
 		}
 		writeFileSync(join(root, "meta.json"), JSON.stringify({ ...meta, parts: names, cmarker: CMARKER_VERSION }));
 		writeFileSync(
