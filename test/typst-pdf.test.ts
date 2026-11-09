@@ -106,4 +106,25 @@ describe("typst-pdf", () => {
 		symlinkSync(join(secret, "secret.png"), join(dir, "img.png"));
 		await expect(renderPdf(join(dir, "doc.md"), join(dir, "doc.pdf"), typst)).rejects.toThrow(/outside the document/);
 	});
+
+	test("designed front pages come before the body, in Inter, with the kit's blocks", async () => {
+		const front = '#import "kit.typ": *\n#page[#set text(font: sans)\n#kpi("735 mil", [pedidos]) #card[Ideia]]\n';
+		const dir = folder({
+			"doc.md": "---\nfront: abertura.typ\ncover: false\n---\n\nCorpo do relatório.\n",
+			"abertura.typ": front,
+		});
+		await renderPdf(join(dir, "doc.md"), join(dir, "doc.pdf"), typst);
+		const pdf = readFileSync(join(dir, "doc.pdf"));
+		expect(pages(pdf)).toBe(2);
+		expect(pdf.toString("latin1")).toContain("Inter");
+	});
+
+	test("a front page that is not a .typ file inside the document's folder is refused", async () => {
+		const secret = folder({ "front.typ": "#page[segredo]\n" });
+		const dir = folder({ "doc.md": "---\nfront: abertura.typ\n---\n\ntexto\n" });
+		symlinkSync(join(secret, "front.typ"), join(dir, "abertura.typ"));
+		await expect(renderPdf(join(dir, "doc.md"), join(dir, "doc.pdf"), typst)).rejects.toThrow(/outside the document/);
+		writeFileSync(join(dir, "doc.md"), "---\nfront: doc.md\n---\n\ntexto\n");
+		await expect(renderPdf(join(dir, "doc.md"), join(dir, "doc.pdf"), typst)).rejects.toThrow(/\.typ file/);
+	});
 });

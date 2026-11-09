@@ -5,8 +5,9 @@
 //
 // The first run downloads Typst and cmarker into ~/.cache/typst-pdf (TYPST_PDF_CACHE elsewhere), each checked against
 // its sha256; later runs are offline. The Markdown is data, never code: cmarker runs with raw-typst off, Typst's root
-// is a fresh temp folder holding only the template, the Markdown parts and the local images the Markdown names, and
-// only Typst's embedded fonts are used (the same PDF on every machine).
+// is a fresh temp folder holding only the template, the Markdown parts, the local images the Markdown names and the
+// optional designed front pages (`front:` in the frontmatter, the author's own Typst, with ../assets/kit.typ), and
+// only the fonts in ../assets/fonts and Typst's embedded ones are used (the same PDF on every machine).
 import { createHash } from "node:crypto";
 import {
 	copyFileSync,
@@ -39,7 +40,10 @@ const BUILDS: Record<string, { target: string; sha256: string }> = {
 		sha256: "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c",
 	},
 };
-const TEMPLATE = join(import.meta.dir, "..", "assets", "template.typ");
+const ASSETS = join(import.meta.dir, "..", "assets");
+const TEMPLATE = join(ASSETS, "template.typ");
+const KIT = join(ASSETS, "kit.typ");
+const FONTS = join(ASSETS, "fonts");
 const COMPILE_TIMEOUT_MS = 120_000;
 // A line holding only this comment starts a new page.
 const PAGEBREAK = /^[ \t]*<!--\s*pagebreak\s*-->[ \t]*$/m;
@@ -118,6 +122,8 @@ export interface Meta {
 	/** ISO 639-1; "pt" (the default) hyphenates as pt-BR and writes "Página X de Y". */
 	lang?: string;
 	region?: string;
+	/** A Typst file next to the Markdown: designed pages placed before the body (it may `#import "kit.typ": *`). */
+	front?: string;
 }
 
 /** YAML frontmatter and the body after it. */
@@ -167,6 +173,19 @@ function localImages(body: string): string[] {
 	return [...out];
 }
 
+/**
+ * The real path of a file the document names, which must sit inside the document's folder once symlinks are resolved
+ * (an image or front page that points elsewhere is refused, so a crafted link cannot pull another file into the PDF).
+ */
+function insideFolder(source: string, rel: string, what: string): string {
+	const folder = realpathSync(dirname(source));
+	const from = resolve(dirname(source), rel);
+	if (!existsSync(from)) throw new Error(`typst-pdf: ${what} not found: ${rel}`);
+	const real = realpathSync(from);
+	if (!real.startsWith(folder + sep)) throw new Error(`typst-pdf: ${what} outside the document's folder: ${rel}`);
+	return real;
+}
+
 /** Renders the Markdown file to a PDF; throws with Typst's diagnostics when it does not compile. */
 export async function renderPdf(input: string, output: string, typst?: Typst): Promise<void> {
 	const t = typst ?? (await ensureTypst());
@@ -180,24 +199,38 @@ export async function renderPdf(input: string, output: string, typst?: Typst): P
 		parts.forEach((part, i) => {
 			writeFileSync(join(root, names[i] as string), part);
 		});
-		// Symlinks are resolved first: an image (or a folder on its path) that points outside the document's folder is
-		// refused, so a crafted link cannot pull another file into the PDF.
-		const folder = realpathSync(dirname(source));
 		for (const img of localImages(body)) {
-			const from = join(dirname(source), img);
-			if (!existsSync(from)) throw new Error(`typst-pdf: image not found: ${img}`);
-			const real = realpathSync(from);
-			if (!real.startsWith(folder + sep)) throw new Error(`typst-pdf: image outside the document's folder: ${img}`);
+			const real = insideFolder(source, img, "image");
 			mkdirSync(dirname(join(root, img)), { recursive: true });
 			copyFileSync(real, join(root, img));
 		}
-		writeFileSync(join(root, "meta.json"), JSON.stringify({ ...meta, parts: names, cmarker: CMARKER_VERSION }));
+		if (meta.front !== undefined) {
+			if (typeof meta.front !== "string" || !meta.front.endsWith(".typ"))
+				throw new Error("typst-pdf: front must name a .typ file next to the Markdown");
+			copyFileSync(insideFolder(source, meta.front, "front"), join(root, "front.typ"));
+			copyFileSync(KIT, join(root, "kit.typ"));
+		}
+		const front = meta.front === undefined ? {} : { front: "front.typ" };
+		writeFileSync(
+			join(root, "meta.json"),
+			JSON.stringify({ ...meta, ...front, parts: names, cmarker: CMARKER_VERSION }),
+		);
 		writeFileSync(
 			join(root, "main.typ"),
 			readFileSync(TEMPLATE, "utf8").replace("@preview/cmarker:VERSION", `@preview/cmarker:${CMARKER_VERSION}`),
 		);
 		const out = join(root, "out.pdf");
-		const compile = [t.bin, "compile", "--root", root, "--package-path", t.packages, "--ignore-system-fonts"];
+		const compile = [
+			t.bin,
+			"compile",
+			"--root",
+			root,
+			"--package-path",
+			t.packages,
+			"--ignore-system-fonts",
+			"--font-path",
+			FONTS,
+		];
 		run([...compile, join(root, "main.typ"), out], COMPILE_TIMEOUT_MS);
 		mkdirSync(dirname(resolve(output)), { recursive: true });
 		copyFileSync(out, resolve(output));
