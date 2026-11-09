@@ -81,8 +81,8 @@ over-trigger them. Stay under **1024 characters** — the Agent Skills limit.
 ```yaml
 description: >-
   Use when turning a Markdown file into a styled PDF — 'export this as PDF', 'make a
-  PDF of the README'. Covers the md-to-pdf CLI, stylesheet and page options. Do NOT use
-  for slide decks (marp) or for filling in an existing PDF form.
+  PDF of the README'. Covers the pinned Typst renderer, the template and page breaks. Do
+  NOT use for slide decks or for filling in an existing PDF form.
 ```
 
 All "when to use" information lives **here**, not in a body section — the body only loads
@@ -160,8 +160,8 @@ Triggering fails independently of content. Check both directions:
 
 - **Should fire:** several phrasings of the same intent, including ones that never name the
   skill or its nouns.
-- **Should NOT fire:** the near-misses. Adjacent work that shares vocabulary — for `marp`,
-  that is "make a PDF of this markdown" and "review my slide notes". Obvious negatives
+- **Should NOT fire:** the near-misses. Adjacent work that shares vocabulary — for `typst-pdf`,
+  that is "make slides from this markdown" and "fill in this PDF form". Obvious negatives
   ("write a fibonacci function") test nothing.
 
 If it under-triggers, the fix is almost always the description, not the body.

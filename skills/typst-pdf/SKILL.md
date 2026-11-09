@@ -6,9 +6,9 @@ description: >-
   contents, running header, "Página X de Y" footer, tables with header rows, page breaks on request, pt-BR by
   default. Use for reports, diagnoses, proposals, one-pagers, contracts or any document someone will read or print —
   'gera um PDF do relatório', 'export this markdown as PDF', 'make a PDF of the diagnosis', 'faz um one-pager
-  bonito'. It replaces browser-based Markdown-to-PDF tools (md-to-pdf, Chrome printing), whose page breaks and fonts
-  are weaker. Do NOT use for slide decks (marp) or for filling or editing an existing PDF. pitomastra's send_pdf
-  tool uses the same template through its own pinned copy; change it here, then bump that pin.
+  bonito'. Prefer it to printing Markdown from a browser, whose page breaks and fonts are weaker. Do NOT use for
+  slide decks or for filling or editing an existing PDF. pitomastra's send_pdf tool uses the same template and fonts
+  through its own pinned copy; change them here, then bump that pin.
 ---
 
 # Markdown to PDF with Typst
@@ -105,10 +105,10 @@ change `assets/template.typ` only for something every document should get.
 - **Look:** `assets/template.typ` (page, fonts, colours, cover, header, footer, tables) and `assets/kit.typ` (the
   blocks of designed pages, same palette). Both are ordinary Typst; the template's header comment lists the metadata
   it reads.
-- **Shared with pitomastra:** its WhatsApp `send_pdf` compiles this same template (cover and header off), downloaded
-  by commit and sha256 in its `scripts/typst.sh`, without `assets/fonts` (Libertinus Serif there until it ships them).
-  After changing the template here and pushing, update `TEMPLATE_COMMIT` and `TEMPLATE_SHA256` there; until then its
-  PDFs keep the old look.
+- **Shared with pitomastra:** its WhatsApp `send_pdf` compiles this same template (cover and header off) with the
+  Inter fonts, all downloaded by commit and sha256 in its `scripts/typst.sh` (not `kit.typ`: no front pages there).
+  After changing the template or the fonts here and pushing, update `TEMPLATE_COMMIT` and the sha256 values there;
+  until then its PDFs keep the old look.
 - **Versions:** `TYPST_VERSION`, `CMARKER_VERSION` and their sha256 at the top of `scripts/pdf.ts`. Take the sha256
   from the Typst release's asset digests and from the downloaded cmarker package; the next run replaces the cache.
   pitomastra's `scripts/typst.sh` pins the same versions: move both together.

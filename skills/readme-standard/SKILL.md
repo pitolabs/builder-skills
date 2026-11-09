@@ -6,8 +6,7 @@ description: >-
   README into docs'. Covers the welcome-first shape (banner, badges, a pitch in two sentences, a feature list, a quick
   start that compiles), moving depth into docs/ next to the code, an SVG hero image, neutral example names, and the
   checks before pushing. Do NOT use for a project's internal AGENTS.md or contributor rules alone (that is
-  CONTRIBUTING.md, covered here only as a link target), for slide decks (marp) or for a skill's own SKILL.md
-  (write-skill).
+  CONTRIBUTING.md, covered here only as a link target), for slide decks or for a skill's own SKILL.md (write-skill).
 ---
 
 # README standard
