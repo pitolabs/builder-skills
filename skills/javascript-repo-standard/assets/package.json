@@ -11,7 +11,7 @@
 		"prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.6.5",
+		"@biomejs/biome": "2.6.6",
 		"typescript": "7.0.2"
 	}
 }
