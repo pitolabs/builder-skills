@@ -53,6 +53,15 @@ When you write a script (a tool, a helper an image runs, anything beyond a few l
 run by Bun, not Python. Exception: inside an image that already ships Node, use that Node when it runs the script
 (test it with that image's `node`: older versions and non-erasable syntax fail), so the image gets no second runtime.
 
+## A mechanism change carries its AGENTS.md
+
+When a change adds or alters something later work must keep in sync — a test that gates merges, a deploy flow, a CI
+job, a fixture or mock other code must extend, a convention — the nearest `AGENTS.md` covering it is part of the
+deliverable, in the same commit or PR: what exists and where, the rule a later change must obey ("a new agent needs a
+scenario in …"), and the command that proves it. A plan lists this as a step with the text to add; it is not
+documentation cleanup for afterwards. Do not restate what code or CI already says; name the file that decides. An
+`AGENTS.md` that still describes the old flow is a rule the next agent executes.
+
 ## Obsidian vaults synced by LiveSync
 
 On a Mac, Obsidian's LiveSync syncs only when the Obsidian window gets focus. A file changed or deleted in the vault
