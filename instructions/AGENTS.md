@@ -46,8 +46,15 @@ pre-commit hook, CI, tool pins or Renovate config, use the matching skills and r
 you push. Do not bring in another package manager, formatter, tool manager or dependency bot. Renovate's `:automerge`
 preset is part of the standard and requires CI that runs the repository's tests on pull requests; `:automerge-minor`
 stays opt-in. A repository that is public, or about to be, also follows `public-repo-standard`. The org requires
-two-factor
-authentication for everyone.
+two-factor authentication for everyone.
+
+Actions minutes in private repositories are paid (GitHub Free includes $12 a month for the whole org), so CI there
+runs only when it has to. Renovate acts only on Monday and Tuesday (UTC), with the updates that merge themselves in
+one PR per repository: on other days it leaves its PRs alone, so do not wait for one to merge (its rebase checkbox
+acts at once); `default.json` and `automerge.json` in `pitolabs/renovate-config` decide this. Every workflow of a
+private repository that runs on `pull_request` has a workflow-level `concurrency:` that cancels the run a newer push
+supersedes (the block is in base-repo-standard, step 4); a new workflow gets it too. Proof:
+`bun ~/.config/opencode/skills/base-repo-standard/scripts/audit.ts <repo> --working-tree` (check `ci.concurrency`).
 
 When you write a script (a tool, a helper an image runs, anything beyond a few lines of shell), write it in TypeScript
 run by Bun, not Python. Exception: inside an image that already ships Node, use that Node when it runs the script

@@ -55,7 +55,8 @@ bun "$audit" <repo> --working-tree      # your uncommitted fix
 It needs `bun`, `git`, `mise` (`brew install mise`) and `gh` (logged in; `--offline` skips the GitHub settings), and
 the network. With no flag it audits the committed `HEAD`, copied to a temporary directory; the repository is never
 touched. Exit 0: every required check passes; 1: something fails; 2: bad usage. `--json` for a machine report,
-`--no-behavior` to skip the runs below. Each line is `PASS`, `FAIL`, `WARN` or `SKIP` with a `fix:`.
+`--no-behavior` to skip the runs below, `--private` to audit as a private repository when GitHub cannot say (with
+`--offline`). Each line is `PASS`, `FAIL`, `WARN` or `SKIP` with a `fix:`.
 
 What the behaviour checks do, so a failure can be reproduced by hand:
 
@@ -67,7 +68,8 @@ What the behaviour checks do, so a failure can be reproduced by hand:
   token (must be refused).
 
 The GitHub checks: Dependabot alerts on, an open Dependency Dashboard issue by Renovate (it has run), and the
-organization's 2FA requirement.
+organization's 2FA requirement. In a private repository, where Actions minutes are paid, `ci.concurrency` also
+requires every `pull_request` workflow to cancel the run a newer push supersedes (step 4 below).
 
 ## Fix what fails
 

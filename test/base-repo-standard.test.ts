@@ -38,7 +38,7 @@ const extending = (...presets: string[]) =>
 	});
 
 /** A repository set up as the assets say, changed by `mutate`, committed; then audited. */
-function audit(mutate: (dir: string) => void = () => {}, behavior = true): Result {
+function audit(mutate: (dir: string) => void = () => {}, behavior = true, extra: string[] = []): Result {
 	const base = mkdtempSync(join(tmpdir(), "audit-base-fixture-"));
 	const dir = join(base, "repo");
 	try {
@@ -54,7 +54,7 @@ function audit(mutate: (dir: string) => void = () => {}, behavior = true): Resul
 		sh(["git", "config", "user.name", "fixture"], dir);
 		sh(["git", "add", "-A"], dir);
 		sh(["git", "commit", "-q", "--no-verify", "-m", "fixture"], dir);
-		const flags = ["--offline", "--json", ...(behavior ? [] : ["--no-behavior"])];
+		const flags = ["--offline", "--json", ...(behavior ? [] : ["--no-behavior"]), ...extra];
 		const p = Bun.spawnSync(["bun", join(SKILL, "scripts/audit.ts"), dir, ...flags], {
 			stdout: "pipe",
 			stderr: "pipe",
@@ -195,6 +195,36 @@ describe("base-repo-standard audit", () => {
 			false,
 		);
 		expect(check(writes, "ci.permissions")?.status).toBe("fail");
+	});
+
+	test("a private repository's pull-request workflow must cancel the run a newer push supersedes", () => {
+		const concurrency =
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub Actions expression, written to the workflow as is
+			"concurrency:\n  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}\n  cancel-in-progress: true\n";
+		const withBlock = (dir: string) =>
+			write(dir, ".github/workflows/ci.yml", `${ciWorkflow().replace("jobs:\n", `${concurrency}jobs:\n`)}${testJob}`);
+		const without = audit(() => {}, false, ["--private"]);
+		expect(check(without, "ci.concurrency")?.status).toBe("fail");
+		expect(check(without, "ci.concurrency")?.detail).toContain(".github/workflows/ci.yml");
+		const groupOnly = audit(
+			(dir) =>
+				write(
+					dir,
+					".github/workflows/ci.yml",
+					`${ciWorkflow().replace("jobs:\n", "concurrency: ci\njobs:\n")}${testJob}`,
+				),
+			false,
+			["--private"],
+		);
+		expect(check(groupOnly, "ci.concurrency")?.status).toBe("fail");
+		expect(check(audit(withBlock, false, ["--private"]), "ci.concurrency")?.status).toBe("pass");
+		// A public repository's runs are free: no such requirement.
+		expect(
+			check(
+				audit(() => {}, false),
+				"ci.concurrency",
+			),
+		).toBeUndefined();
 	});
 
 	test("a tool bumped in mise.toml without regenerating mise.lock fails the lock check", () => {

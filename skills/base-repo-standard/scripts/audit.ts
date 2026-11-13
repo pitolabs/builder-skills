@@ -6,12 +6,13 @@
 // pre-commit hook, and baselines that expire. Checks behaviour too: the `mise run check:*` tasks must pass on a fresh
 // copy, and the hook must commit a clean change and refuse a generated token.
 //
-//   bun audit.ts <repo> [--ref <rev> | --working-tree] [--offline] [--no-behavior] [--json]
+//   bun audit.ts <repo> [--ref <rev> | --working-tree] [--offline] [--private] [--no-behavior] [--json]
 //
 // Files and behaviour are read from one snapshot (HEAD, --ref or --working-tree) in a temporary directory; the secrets
 // scan reads the repository's own history (read-only): origin's branches and the audited commit, what CI's base job
-// sees. --offline skips the GitHub settings (needs `gh` and a github.com origin otherwise). The behaviour checks need
-// `mise` (brew install mise). Exit 1 if any check fails, 2 on bad usage.
+// sees. --offline skips the GitHub settings (needs `gh` and a github.com origin otherwise). A private repository (read
+// from GitHub, or --private) pays for Actions minutes, so its pull-request workflows must cancel superseded runs. The
+// behaviour checks need `mise` (brew install mise). Exit 1 if any check fails, 2 on bad usage.
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -36,10 +37,13 @@ const ref = refAt >= 0 ? args[refAt + 1] : undefined;
 const repo = args.find((a, i) => !a.startsWith("--") && !(refAt >= 0 && i === refAt + 1));
 const workingTree = args.includes("--working-tree");
 const offline = args.includes("--offline");
+const assumePrivate = args.includes("--private");
 const behavior = !args.includes("--no-behavior");
 const asJson = args.includes("--json");
 if (!repo || (refAt >= 0 && !ref) || (ref && workingTree)) {
-	console.error("usage: bun audit.ts <repo> [--ref <rev> | --working-tree] [--offline] [--no-behavior] [--json]");
+	console.error(
+		"usage: bun audit.ts <repo> [--ref <rev> | --working-tree] [--offline] [--private] [--no-behavior] [--json]",
+	);
 	process.exit(2);
 }
 
@@ -394,8 +398,32 @@ if (zizmorIgnores.length)
 else add("baseline.zizmor", "pass", "no zizmor ignores");
 
 // --- GitHub ---------------------------------------------------------------------------------------------------------
+let isPrivate = assumePrivate;
 if (offline) add("github", "skip", "--offline: GitHub settings not checked");
 else githubChecks();
+if (isPrivate) concurrencyCheck();
+
+// Actions minutes are paid in a private repository: a newer push to a pull request (Renovate bringing its PR up to
+// date, an agent's next commit) must cancel the run it supersedes. Pushes to the default branch keep a group each.
+function concurrencyCheck() {
+	const missing = workflows
+		.filter(({ doc }) => triggers(doc).includes("pull_request"))
+		.filter(({ doc }) => {
+			const c = table(doc?.concurrency);
+			const cancel = c["cancel-in-progress"];
+			return !(c.group && (cancel === true || (typeof cancel === "string" && cancel.includes("${{"))));
+		})
+		.map(({ file }) => file);
+	add(
+		"ci.concurrency",
+		missing.length ? "fail" : "pass",
+		missing.length
+			? `private repository: a newer push to a pull request does not cancel the older run in ${missing.join(", ")}`
+			: "private repository: every pull_request workflow cancels the run a newer push supersedes",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub Actions expression, printed as is
+		"workflow-level `concurrency:` with `group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}` and `cancel-in-progress: true`",
+	);
+}
 
 function githubChecks() {
 	const url = git(source, "remote", "get-url", "origin").out.trim();
@@ -405,6 +433,7 @@ function githubChecks() {
 		return;
 	}
 	const [owner, slug] = [m[1], `${m[1]}/${m[2]}`];
+	if (run(["gh", "api", `repos/${slug}`, "--jq", ".private"], source).out.trim() === "true") isPrivate = true;
 	const alerts = run(["gh", "api", `repos/${slug}/vulnerability-alerts`], source);
 	if (alerts.ok)
 		add("github.dependabot-alerts", "pass", "Dependabot alerts on (Renovate's vulnerabilityAlerts reads them)");
