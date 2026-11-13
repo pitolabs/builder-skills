@@ -82,7 +82,10 @@ organization's 2FA requirement.
 3. `mise lock --platform linux-x64,macos-arm64` and commit `mise.lock`. Never edit it by hand.
 4. CI: paste the job in `assets/ci-base.yml` into `.github/workflows/ci.yml`, add top-level
    `permissions: contents: read` to every workflow (grant writes per job), and pin every `uses:` to a SHA:
-   `gh api repos/<owner>/<action>/commits/<tag> --jq .sha`, keeping the tag as a `# vX.Y.Z` comment.
+   `gh api repos/<owner>/<action>/commits/<tag> --jq .sha`, keeping the tag as a `# vX.Y.Z` comment. In a private
+   repository (Actions minutes are paid there past the plan's included amount), also give `ci.yml` a workflow-level
+   `concurrency:` with `group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}` and
+   `cancel-in-progress: true`: a newer push to a PR cancels its older run, and pushes to the default branch all run.
 5. `gh api -X PUT repos/<owner>/<repo>/vulnerability-alerts`.
 6. `mise run check`, then deal with each finding:
    - **osv-scanner:** update the dependency (a transitive one: refresh the lockfile). When it has to wait, an
@@ -119,11 +122,18 @@ repository's `renovate.json`.
   later, and the weekly lockfile refresh, merge once CI is green, so these PRs do not pile up. It is only safe where CI
   runs the repository's tests on pull requests, so the audit fails without the tests as well as without the preset: add
   the tests to CI first. Digest updates (`upstream-repush`), minors, majors and 0.x dependencies still wait for a human.
-- `local>pitolabs/renovate-config:automerge-minor` (optional, opt-in): minors too. Only where a minor cannot reach
-  production unseen (e2e tests, an upstream guard).
+  What merges itself goes in one PR per repository, `automerged updates` (a group automerges only when every update
+  in it does); a repository's own `groupName` rules win.
+- `local>pitolabs/renovate-config:automerge-minor` (optional, opt-in): minors too, in the same PR. Only where a minor
+  cannot reach production unseen (e2e tests, an upstream guard).
 
-How it runs: the Mend-hosted app runs every few hours (about 4) and automerges one PR per branch per run; the others
-wait for the next run. To run it now, tick the checkbox at the bottom of the Dependency Dashboard issue.
+How it runs: Renovate acts only on Monday and Tuesday (UTC). The preset sets `updateNotScheduled: false`, so on the
+other days it leaves open PRs alone: no update with the default branch, no merge. Renovate's default would bring every
+open automerge PR up to date on each push to the default branch and re-run its CI, which was over half the Actions
+minutes of the private repositories in November 2026. Vulnerability fixes are not held to the window. The
+Mend-hosted app runs every few hours (about 4) and automerges one PR per branch per run; the others are brought up to
+date and wait for the next run. To run it now, tick the checkbox at the bottom of the Dependency Dashboard issue
+(inside the window); outside it, only a PR's own rebase checkbox makes Renovate update and merge that PR.
 
 A PR that bumps a tool in `mise.toml` may arrive without a regenerated `mise.lock`; the `base` job then fails at
 `mise install --locked` (red, never an unverified binary). Check out the branch, run the `mise lock` line, push.
