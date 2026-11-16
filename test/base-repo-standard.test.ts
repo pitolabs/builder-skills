@@ -154,14 +154,14 @@ describe("base-repo-standard audit", () => {
 			false,
 		);
 		expect(check(pushOnly, "renovate.automerge")?.status).toBe("fail");
-		// Without the preset the standard is not met, tests or not; :automerge-minor alone does not replace it.
+		// Without the preset the standard is not met, tests or not.
 		const without = audit((dir) => write(dir, "renovate.json", extending()), false);
 		expect(check(without, "renovate.automerge")?.status).toBe("fail");
 		expect(check(without, "renovate.automerge")?.detail).toContain("does not extend");
-		const minorOnly = audit((dir) => write(dir, "renovate.json", extending("automerge-minor")), false);
-		expect(check(minorOnly, "renovate.automerge")?.status).toBe("fail");
-		const both = audit((dir) => write(dir, "renovate.json", extending("automerge", "automerge-minor")), false);
-		expect(check(both, "renovate.automerge")?.status).toBe("pass");
+		// The removed :automerge-minor breaks Renovate (missing preset), even next to :automerge.
+		const stale = audit((dir) => write(dir, "renovate.json", extending("automerge", "automerge-minor")), false);
+		expect(check(stale, "renovate.automerge")?.status).toBe("fail");
+		expect(check(stale, "renovate.automerge")?.detail).toContain("no longer exists");
 	});
 
 	test("an action pinned by tag fails, a SHA-pinned one passes", () => {

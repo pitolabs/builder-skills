@@ -44,9 +44,9 @@ wherever they sit (a project only in a subdirectory gets a root Bun workspace or
 Ruff), all from builder-skills. When you create or adopt a repository, or change its package manager, formatter,
 pre-commit hook, CI, tool pins or Renovate config, use the matching skills and run their audits; they must pass before
 you push. Do not bring in another package manager, formatter, tool manager or dependency bot. Renovate's `:automerge`
-preset is part of the standard and requires CI that runs the repository's tests on pull requests; `:automerge-minor`
-stays opt-in. A repository that is public, or about to be, also follows `public-repo-standard`. The org requires
-two-factor authentication for everyone.
+preset is part of the standard (every update but majors and re-pushed actions or release assets merges on green CI)
+and requires CI that runs the repository's tests on pull requests. A repository that is public, or about to be, also
+follows `public-repo-standard`. The org requires two-factor authentication for everyone.
 
 Actions minutes in private repositories are paid (GitHub Free includes $12 a month for the whole org), so CI there
 runs only when it has to. Renovate acts only on Monday and Tuesday (UTC), with the updates that merge themselves in

@@ -23,7 +23,7 @@ the result and fix it.
 | Rule | Why |
 |---|---|
 | `renovate.json` extends `local>pitolabs/renovate-config` | one dependency policy for every repository, changed in one place (the preset repository's README says what it sets) |
-| `renovate.json` also extends `local>pitolabs/renovate-config:automerge`, and CI runs the repository's tests on pull requests | patch, pin and digest-pin updates of dependencies at 1.0 or later and the weekly lockfile refresh merge themselves on green CI, so PRs do not pile up; green CI means something only if the tests run on the PR |
+| `renovate.json` also extends `local>pitolabs/renovate-config:automerge`, and CI runs the repository's tests on pull requests | every update but majors and re-pushed actions or release assets (minor, patch, pin, Docker digest, 0.x included) and the weekly lockfile refresh merge themselves on green CI, so PRs do not pile up; green CI means something only if the tests run on the PR |
 | Dependabot alerts on | GitHub's advisory feed; Renovate reads it (`vulnerabilityAlerts`) and opens the fix at once, outside its schedule and hourly limit |
 | Workflows: top-level `permissions: contents: read`, every `uses:` a commit SHA with a `# vX.Y.Z` comment, `persist-credentials: false` on checkouts | a compromised step gets a read-only token; a tag can be moved to other code, a SHA cannot; a persisted token sits in `.git/config` for every later step |
 | `mise.toml` pins gitleaks, jactionlint, zizmor, shellcheck and osv-scanner; `mise.lock` holds each download's sha256 per platform | the same binaries on every machine and in CI; a download that differs from the lock fails instead of running |
@@ -114,20 +114,22 @@ requires every `pull_request` workflow to cancel the run a newer push supersedes
 
 The preset extends Renovate's `config:best-practices`, which pins Docker images and actions by digest, sends config
 migration PRs, flags abandoned packages, holds npm releases for three days and refreshes lockfiles weekly. On top, it
-holds PyPI releases three days too, labels majors `major-update`, and labels digest updates (same tag, new content:
-an upstream re-push) `upstream-repush` and never automerges them. Repository-specific managers and groups stay in the
-repository's `renovate.json`.
+holds PyPI releases three days too, labels majors `major-update`, and labels digest updates of actions and release
+assets (same tag, new content: an upstream re-push) `upstream-repush` and never automerges them. Docker digest
+updates are routine (official images are rebuilt under the same tag for base-image patches) and merge with the rest.
+Digest updates and the lockfile refresh have no release date at Renovate's branch stage, so the preset makes their age
+check `timestamp-optional` and gives the refresh no age gate; otherwise `renovate/stability-days` stays pending for
+ever and they never merge. Repository-specific managers and groups stay in the repository's `renovate.json`.
 
-**Automerge is part of the standard**, in `extends`:
-
-- `local>pitolabs/renovate-config:automerge` (required): patch, pin and digest-pin updates of dependencies at 1.0 or
-  later, and the weekly lockfile refresh, merge once CI is green, so these PRs do not pile up. It is only safe where CI
-  runs the repository's tests on pull requests, so the audit fails without the tests as well as without the preset: add
-  the tests to CI first. Digest updates (`upstream-repush`), minors, majors and 0.x dependencies still wait for a human.
-  What merges itself goes in one PR per repository, `automerged updates` (a group automerges only when every update
-  in it does); a repository's own `groupName` rules win.
-- `local>pitolabs/renovate-config:automerge-minor` (optional, opt-in): minors too, in the same PR. Only where a minor
-  cannot reach production unseen (e2e tests, an upstream guard).
+**Automerge is part of the standard**, in `extends`: `local>pitolabs/renovate-config:automerge`. Minor, patch, pin,
+digest-pin and Docker digest updates, 0.x dependencies like any other, and the weekly lockfile refresh merge once CI is
+green, so these PRs do not pile up; majors and `upstream-repush` digests wait for a human. CI is the only gate before
+the merge, so it is only safe where CI runs the repository's tests on pull requests: the audit fails without the tests
+as well as without the preset; add the tests to CI first. What merges itself goes in one PR per repository,
+`automerged updates`: a group automerges only when every update in it does and CI is green, so one update that breaks
+the build holds the whole group until it is fixed (on the Renovate branch) or excluded. A repository's own
+`groupName` rules win. The former opt-in `:automerge-minor` no longer exists: a repository that still extends it gets
+a Renovate config error and no updates at all (the audit fails it).
 
 How it runs: Renovate acts only on Monday and Tuesday (UTC). The preset sets `updateNotScheduled: false`, so on the
 other days it leaves open PRs alone: no update with the default branch, no merge. Renovate's default would bring every
@@ -152,8 +154,8 @@ A PR that bumps a tool in `mise.toml` may arrive without a regenerated `mise.loc
 - Secret scanning and push protection are paid features on private repositories of a GitHub Free organization:
   the gitleaks hook and `check:secrets` are the only secret checks there.
 - zizmor flags actions pinned by tag. A tag is a pointer: in March 2026, `aquasecurity/trivy-action` tags were
-  re-pushed to other commits, so every workflow using them by tag ran new code. Hence SHAs, and digest updates that
-  wait for a human.
+  re-pushed to other commits, so every workflow using them by tag ran new code. Hence SHAs, and digest updates of
+  actions that wait for a human.
 - mise trusts a restored tool cache as-is, without the `mise.lock` check; hence `cache: false` on `jdx/mise-action`.
 - Keep `mise.toml` to `[tools]` and `[tasks]`: `[env]`, templates or path versions make mise ask for `mise trust` in
   every clone, in CI and in the audit's copy.

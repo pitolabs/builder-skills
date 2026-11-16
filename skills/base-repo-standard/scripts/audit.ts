@@ -239,7 +239,7 @@ const triggers = (doc: Table | undefined): string[] => {
 };
 
 const AUTOMERGE = `${PRESET}:automerge`;
-const automergePresets = extendsList.filter((e) => e === AUTOMERGE || e === `${AUTOMERGE}-minor`);
+const REMOVED = `${AUTOMERGE}-minor`; // folded into :automerge; Renovate stops with a config error on a missing preset
 const tested = workflows.find(
 	({ doc }) =>
 		triggers(doc).includes("pull_request") &&
@@ -247,6 +247,13 @@ const tested = workflows.find(
 );
 if (!renovate)
 	add("renovate.automerge", "fail", "no parsable renovate.json, so no automerge", "copy assets/renovate.json");
+else if (extendsList.includes(REMOVED))
+	add(
+		"renovate.automerge",
+		"fail",
+		`${renovateFile} extends ${REMOVED}, which no longer exists: Renovate stops with a config error`,
+		`remove "${REMOVED}" from "extends" (${AUTOMERGE} now takes minors)`,
+	);
 else if (!extendsList.includes(AUTOMERGE))
 	add(
 		"renovate.automerge",
@@ -254,12 +261,12 @@ else if (!extendsList.includes(AUTOMERGE))
 		`${renovateFile} does not extend ${AUTOMERGE}`,
 		`make CI run the repository's tests on pull_request, then add "${AUTOMERGE}" to "extends"`,
 	);
-else if (tested) add("renovate.automerge", "pass", `${automergePresets.join(", ")}; ${tested.file} runs tests on PRs`);
+else if (tested) add("renovate.automerge", "pass", `${AUTOMERGE}; ${tested.file} runs tests on PRs`);
 else
 	add(
 		"renovate.automerge",
 		"fail",
-		`automerge needs tests on pull requests: no workflow with a pull_request trigger runs a test step (${automergePresets.join(", ")})`,
+		"automerge needs tests on pull requests: no workflow with a pull_request trigger runs a test step",
 		"run the repository's tests in CI on pull_request",
 	);
 
