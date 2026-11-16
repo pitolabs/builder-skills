@@ -29,6 +29,15 @@ function write(dir: string, file: string, text: string, mode?: number) {
 
 const asset = (f: string) => readFileSync(join(ASSETS, f), "utf8");
 
+/** The template's `dev` group with pre-commit prepended, whatever the other pins are; throws if there is no group to edit. */
+function withPreCommit(pyproject: string) {
+	const result = pyproject.replace(/^dev = \[/m, 'dev = ["pre-commit==4.7.0", ');
+	if (result === pyproject || !result.includes("pre-commit==4.7.0")) {
+		throw new Error("pyproject.toml has no `dev = [` line to add pre-commit to");
+	}
+	return result;
+}
+
 /** A repository set up exactly as the assets say, changed by `mutate`, locked, changed by `afterLock`, committed; then audited. */
 function audit(mutate: (dir: string) => void = () => {}, afterLock: (dir: string) => void = () => {}): Result {
 	const dir = mkdtempSync(join(tmpdir(), "audit-py-fixture-"));
@@ -187,14 +196,7 @@ describe("python-repo-standard audit", () => {
 		() => {
 			const r = audit((dir) => {
 				rmSync(join(dir, ".githooks"), { recursive: true });
-				write(
-					dir,
-					"pyproject.toml",
-					asset("pyproject.toml").replace(
-						'dev = ["pytest==9.2.0", "ruff==0.17.3"]',
-						'dev = ["pre-commit==4.7.0", "pytest==9.2.0", "ruff==0.17.3"]',
-					),
-				);
+				write(dir, "pyproject.toml", withPreCommit(asset("pyproject.toml")));
 				write(
 					dir,
 					"scripts/setup.sh",
@@ -216,4 +218,23 @@ describe("python-repo-standard audit", () => {
 		},
 		TIMEOUT,
 	);
+
+	test("withPreCommit adds pre-commit to the dev group whatever pytest and ruff are pinned to", () => {
+		for (const [pytest, ruff] of [
+			["9.9.9", "0.99.0"],
+			["1.0.0", "0.17.5"],
+		]) {
+			const template = asset("pyproject.toml")
+				.replace(/pytest==[^"]+/, `pytest==${pytest}`)
+				.replace(/ruff==[^"]+/, `ruff==${ruff}`);
+			expect(template).toContain(`pytest==${pytest}`);
+			expect(template).toContain(`ruff==${ruff}`);
+			const result = withPreCommit(template);
+			expect(result).toContain(`dev = ["pre-commit==4.7.0", "pytest==${pytest}", "ruff==${ruff}"]`);
+		}
+	});
+
+	test("withPreCommit refuses a pyproject without a dev group instead of changing nothing", () => {
+		expect(() => withPreCommit('[project]\nname = "x"\n')).toThrow("no `dev = [` line");
+	});
 });
