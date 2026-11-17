@@ -4,10 +4,10 @@
 
 Everything here is published, the instructions included, and the history keeps what a later commit removes. The rule
 is the section "Public repositories: nothing personal, nothing internal" of `instructions/AGENTS.md`: no person, what
-they did or when; no host, secret location, private tool or how a server is locked down. An environment layer
-(`instructions/<env>.md`) holds what an agent needs to work there (paths, which tools are installed, where repositories
-go), never how that environment is secured or reached; that lives in the private repository that runs it. The privacy
-hooks catch secrets and blocklisted strings only: read the staged diff yourself before committing.
+they did or when; no host, secret location, private tool or how a server is locked down. What one machine needs
+(paths, installed tools, where repositories go) is not shared either: it lives in a private repository, which adds it
+after `instructions/AGENTS.md` on that machine. Here goes only what holds everywhere. The privacy hooks catch secrets
+and blocklisted strings only: read the staged diff yourself before committing.
 
 ## Tests that edit a template asset
 
@@ -19,13 +19,11 @@ added). Edit through a helper that ignores versions and throws when it changed n
 
 Proof: `bun test test/python-repo-standard.test.ts`.
 
-## Instructions: sources and built files
+## Instructions: one shared file
 
-Harnesses read `instructions/<env>/AGENTS.md` (laptops link `macos`, every PitoBox links `pitobox` on its own), built
-by `scripts/instructions.ts` from `instructions/AGENTS.md` plus the layer `instructions/<env>.md`. Edit only the
-sources and rebuild in the same commit. A rule that names a path, a tool or an app of one machine goes in that
-machine's layer; one that holds everywhere goes in `AGENTS.md`. A layer starts with `## Environment: <name>`:
-`scripts/check-load.sh` asks each harness for that heading. Renaming or removing a layer breaks the links on every
-machine of that environment (a PitoBox then runs without instructions), so add the new one first and move the links.
+`instructions/AGENTS.md` is read on every machine, either linked as is or with a private section appended after it
+(the title must stay its first line: `scripts/check-load.sh` asks each harness for it, and a machine's own section is
+checked with `sh scripts/check-load.sh "<its heading>"`). Nothing here may describe one machine; when a shared rule
+needs a machine's detail, it says "your machine's section" instead.
 
-Proof: `bun test test/instructions.test.ts`, then `sh scripts/check-load.sh` on the machine.
+Proof: `sh scripts/check-load.sh` on the machine.

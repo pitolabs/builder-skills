@@ -1,17 +1,17 @@
 # Tito agent: instructions
 
-These are the agent's global instructions, the same on a developer's machine, in a PitoBox and in Tito. They are built
-from two files of [builder-skills](https://github.com/pitolabs/builder-skills): `instructions/AGENTS.md`, what holds in
-every environment, and one layer per environment (`instructions/macos.md`, `instructions/pitobox.md`), what holds only
-there. `bun scripts/instructions.ts` joins them into `instructions/<environment>/AGENTS.md`, the file each harness
-reads through a link (the README says how). Your environment's section is the last one here: where things are, what
-this machine has and lacks. Change the sources in a worktree, never through a link, and run the script.
+These are the agent's global instructions, the same on a developer's machine, in a remote development container and
+in Tito: what holds in every environment. They live in `instructions/AGENTS.md` of
+[builder-skills](https://github.com/pitolabs/builder-skills), which is public. A machine may add a section of its own
+after them (where things are, what that machine has and lacks, how these instructions reach it), kept in a private
+repository; when it does, that section is the last one here and says where it comes from. Change these shared
+instructions in a worktree of builder-skills, never in the file a harness reads.
 
 ## Skills
 
 Skills live in `~/.config/opencode/skills/<skill-name>/SKILL.md` (YAML frontmatter `name`, `description` saying when
 to use it), loaded by OpenCode, OmO, omp and Claude Code. Those from builder-skills are symlinks into its clone (where
-it is: your environment's section); change them in a worktree of builder-skills, never through the link.
+it is: your machine's section, if any); change them in a worktree of builder-skills, never through the link.
 
 ## Git repositories: always your own worktree
 
@@ -107,7 +107,7 @@ written before its tool calls, which never ran).
 A vault has several copies (phone, Mac, server volumes) that LiveSync keeps in step through CouchDB. LiveSync has no
 version check, so two writers of one file can lose an edit: write a change on one copy only, never the same change by
 hand on another, and after editing check that the other copy received it. When your copy syncs, and where it is:
-your environment's section.
+your machine's section.
 
 ## Proposing solutions
 
