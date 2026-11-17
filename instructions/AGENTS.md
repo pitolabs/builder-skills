@@ -69,6 +69,21 @@ scenario in …"), and the command that proves it. A plan lists this as a step w
 documentation cleanup for afterwards. Do not restate what code or CI already says; name the file that decides. An
 `AGENTS.md` that still describes the old flow is a rule the next agent executes.
 
+## Scripts that call tools: every `await` must settle
+
+A harness that runs code you write with tools inside it (OpenCode's `execute` script, an eval cell) waits for every
+`await` in it, and the turn shows "running" until the script ends: one promise that never settles holds the session
+until someone stops it, and nothing reports an error. (2026-11-17, PitoBox: a Switch 2 price check sat 36 minutes on
+`await new Promise(r=>r)`, written before the `pitoshopping.pesquisar` calls, which never started.)
+
+- Every `await` is a tool call or a promise that settles by itself. Never a placeholder, a `new Promise` whose
+  executor never calls `resolve`/`reject`, or a wait for an event nothing will send. To pause, use a bounded timer:
+  `await new Promise((r) => setTimeout(r, ms))`.
+- A wait the tool itself does not bound gets its own timeout: `Promise.race` with a `setTimeout` that rejects.
+- Before you send a script, read it once for an `await` that does not belong there.
+- A script running longer than its tool calls should: look at what it waits on (the server's processes or logs, the
+  script's code) before you blame the server or wait more.
+
 ## Obsidian vaults synced by LiveSync
 
 On a Mac, Obsidian's LiveSync syncs only when the Obsidian window gets focus. A file changed or deleted in the vault
