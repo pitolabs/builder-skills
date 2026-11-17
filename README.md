@@ -1,9 +1,12 @@
 # builder-skills
 
 The Tito agent: its instructions and its skills, the same on a developer's machine and in Tito.
-[`instructions/AGENTS.md`](instructions/AGENTS.md) is the agent's global instructions (how it works in any
-repository, how it proposes options). The skills are folders with a `SKILL.md` in the open
-[Agent Skills](https://agentskills.io/specification) format, so any harness that reads that format can load them.
+[`instructions/`](instructions/) is the agent's global instructions (how it works in any repository, how it proposes
+options): `AGENTS.md` holds what holds everywhere, `macos.md` and `pitobox.md` what holds only on a developer's Mac or
+only in a PitoBox (Pito Labs' remote developer container), and `bun scripts/instructions.ts` joins them into
+`instructions/macos/AGENTS.md` and `instructions/pitobox/AGENTS.md`, the files the harnesses read. The skills are
+folders with a `SKILL.md` in the open [Agent Skills](https://agentskills.io/specification) format, so any harness that
+reads that format can load them.
 
 | Skill | Use it when |
 |---|---|
@@ -44,9 +47,9 @@ write-skill                 yes       yes       yes       yes
 ```
 
 It asks each installed harness in a fresh process (a running session keeps what it read at start), skips the ones
-not installed, and exits 1 if one misses a skill or the instructions. `?` means the harness could not answer (e.g.
-Claude Code not logged in). Run it after installing, renaming or adding a skill, or changing the
-instructions' links.
+not installed, and exits 1 if one misses a skill, the instructions or the environment layer (`macos` on macOS,
+`pitobox` in a box; name it as the first argument elsewhere). `?` means the harness could not answer (e.g. Claude Code
+not logged in). Run it after installing, renaming or adding a skill, or changing the instructions' links.
 
 ## Install
 
@@ -55,19 +58,29 @@ git clone https://github.com/pitolabs/builder-skills.git ~/pitolabs/builder-skil
 for s in ~/pitolabs/builder-skills/skills/*/; do
   ln -sfn "${s%/}" ~/.config/opencode/skills/"$(basename "$s")"
 done
-ln -sfn ~/pitolabs/builder-skills/instructions/AGENTS.md ~/.config/opencode/AGENTS.md   # OpenCode, OmO, omp
-ln -sfn ~/pitolabs/builder-skills/instructions/AGENTS.md ~/.claude/CLAUDE.md            # Claude Code
+ln -sfn ~/pitolabs/builder-skills/instructions/macos/AGENTS.md ~/.config/opencode/AGENTS.md   # OpenCode, OmO, omp
+ln -sfn ~/pitolabs/builder-skills/instructions/macos/AGENTS.md ~/.claude/CLAUDE.md            # Claude Code
 sh ~/pitolabs/builder-skills/scripts/check-load.sh
 ```
 
 `~/.config/opencode/skills` is the personal skill folder here; `~/.agents/skills` and
 `~/.claude/skills` are links to it, so every harness above sees one copy. Without those links, link
-each skill into each harness's folder. Move an existing `AGENTS.md` or `CLAUDE.md` aside before linking (anything
-machine-specific in it has no place in the shared instructions). Remove an older copy of a skill before linking it.
+each skill into each harness's folder. Move an existing `AGENTS.md` or `CLAUDE.md` aside before linking (what is
+specific to one machine goes in that environment's layer). Remove an older copy of a skill before linking it.
 The audits need [Bun](https://bun.com), [uv](https://docs.astral.sh/uv/) and [mise](https://mise.jdx.dev)
 (`brew install mise`).
 
-Update with `git -C ~/pitolabs/builder-skills pull`. Never edit the clone itself.
+Update with `git -C ~/pitolabs/builder-skills pull --ff-only`. Never edit the clone itself.
+
+A PitoBox installs itself: its entrypoint keeps a clone in `~/.local/share/pitobox/builder-skills` at the latest
+`main` and links `instructions/pitobox/AGENTS.md` and the skills (`box/sync-builder-skills.sh` in pitobox).
+
+## Change the instructions
+
+Edit `instructions/AGENTS.md` (every environment) or one layer (`instructions/<env>.md`, which starts with
+`## Environment: <name>`), never a built file, then `bun scripts/instructions.ts`; `bun test test/` fails while a built
+file is stale. A new environment is a new layer, a link to `instructions/<env>/AGENTS.md` on its machines, and its
+name in `test/instructions.test.ts`.
 
 ## Change a skill
 

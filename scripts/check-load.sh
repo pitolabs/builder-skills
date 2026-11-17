@@ -1,8 +1,10 @@
 #!/bin/sh
-# Which of this repository's skills, and whether its instructions (instructions/AGENTS.md), each installed agent
-# harness actually loads, asked in a fresh process (a running session keeps what it read at start). Harnesses that
-# are not installed are skipped. The prompt-based probes make one small model call each; "?" means the harness could
-# not answer (e.g. not logged in). Exit 1 if an installed harness misses a skill or the instructions.
+# Which of this repository's skills, and whether its instructions (instructions/<env>/AGENTS.md: the shared title and
+# this environment's "## Environment: …" heading), each installed agent harness actually loads, asked in a fresh
+# process (a running session keeps what it read at start). Harnesses that are not installed are skipped. The
+# prompt-based probes make one small model call each; "?" means the harness could not answer (e.g. not logged in).
+# Exit 1 if an installed harness misses a skill, the instructions or the environment layer.
+# Usage: sh scripts/check-load.sh [macos|pitobox]   (default: macos on macOS, pitobox as the user pitobox)
 set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
@@ -30,24 +32,36 @@ ask claude sh -c "claude -p x --output-format stream-json --verbose | jq -r 'sel
 ask omo omo -p --no-tools 'List every <name> in your <available_skills>, one per line, nothing else.'
 ask omp omp -p --max-cost=0.5 'List every skill name in your skills list, one per line, nothing else. Do not use tools.'
 
-# The instructions: asked by their title, which no other file has.
+# The instructions: asked by their title and by the environment layer's heading, which no other file has.
+env=${1:-}
+if [ -z "$env" ]; then
+  if [ "$(uname)" = Darwin ]; then env=macos; elif [ "$(id -un)" = pitobox ]; then env=pitobox; fi
+fi
+[ -n "$env" ] && [ -f "$root/instructions/$env.md" ] || {
+  echo "check-load: name the environment, one of instructions/<env>.md (macos, pitobox, …)" >&2
+  exit 2
+}
 title=$(sed -n '1s/^# *//p' "$root/instructions/AGENTS.md")
-q="Does any instruction or context file you were given begin with the heading \"$title\"? Answer only yes or no."
-said() { # <harness> <command...>: yes / no / ? into $tmp/<harness>.instructions
-  h=$1
-  shift
+layer=$(sed -n '1s/^## *//p' "$root/instructions/$env.md")
+said() { # <key> <heading> <harness> <command...>: yes / no / ? into $tmp/<harness>.<key>
+  key=$1 heading=$2 h=$3
+  shift 3
   command -v "$h" >/dev/null 2>&1 || return
+  q="Does any instruction or context file you were given contain the heading \"$heading\"? Answer only yes or no."
   # Only a bare yes or no counts: "Not logged in" must read as "could not ask", not as "no".
-  a=$("$@" 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 1 | tr '[:upper:]' '[:lower:]' | tr -cd '[:lower:]')
+  a=$("$@" "$q" 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 1 | tr '[:upper:]' '[:lower:]' | tr -cd '[:lower:]')
   case $a in
     yes | no) echo "$a" ;;
     *) echo "?" ;;
-  esac >"$tmp/$h.instructions"
+  esac >"$tmp/$h.$key"
 }
-said opencode opencode run "$q"
-said claude claude -p "$q"
-said omo omo -p --no-tools "$q"
-said omp omp -p --max-cost=0.3 "$q"
+for k in instructions layer; do
+  if [ "$k" = instructions ]; then heading=$title; else heading=$layer; fi
+  said "$k" "$heading" opencode opencode run
+  said "$k" "$heading" claude claude -p
+  said "$k" "$heading" omo omo -p --no-tools
+  said "$k" "$heading" omp omp -p --max-cost=0.3
+done
 harnesses="opencode claude omo omp"
 printf '%-28s' skill
 for h in $harnesses; do printf '%-10s' "$h"; done
@@ -69,22 +83,26 @@ for d in "$root"/skills/*/; do
   done
   echo
 done
-printf '%-28s' "(instructions)"
-for h in $harnesses; do
-  if [ -f "$tmp/$h.missing" ]; then
-    mark="-"
-  else
-    case $(cat "$tmp/$h.instructions" 2>/dev/null) in
-      yes) mark="yes" ;;
-      no)
-        mark="NO"
-        status=1
-        ;;
-      *) mark="?" ;;
-    esac
-  fi
-  printf '%-10s' "$mark"
-done
-echo
+answers() { # <label> <key>: one row of yes / NO / ? / -
+  printf '%-28s' "$1"
+  for h in $harnesses; do
+    if [ -f "$tmp/$h.missing" ]; then
+      mark="-"
+    else
+      case $(cat "$tmp/$h.$2" 2>/dev/null) in
+        yes) mark="yes" ;;
+        no)
+          mark="NO"
+          status=1
+          ;;
+        *) mark="?" ;;
+      esac
+    fi
+    printf '%-10s' "$mark"
+  done
+  echo
+}
+answers "(instructions)" instructions
+answers "(environment: $env)" layer
 echo "(- : not installed here; ? : could not ask, e.g. not logged in)"
 exit $status

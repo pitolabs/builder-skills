@@ -1,16 +1,17 @@
 # Tito agent: instructions
 
-These are the agent's global instructions, the same on a developer's machine and in Tito. They live in
-[`instructions/AGENTS.md`](https://github.com/pitolabs/builder-skills/blob/main/instructions/AGENTS.md) of
-builder-skills and reach each harness as a link (the README says how): change them there, in a worktree, never through
-a link.
+These are the agent's global instructions, the same on a developer's machine, in a PitoBox and in Tito. They are built
+from two files of [builder-skills](https://github.com/pitolabs/builder-skills): `instructions/AGENTS.md`, what holds in
+every environment, and one layer per environment (`instructions/macos.md`, `instructions/pitobox.md`), what holds only
+there. `bun scripts/instructions.ts` joins them into `instructions/<environment>/AGENTS.md`, the file each harness
+reads through a link (the README says how). Your environment's section is the last one here: where things are, what
+this machine has and lacks. Change the sources in a worktree, never through a link, and run the script.
 
 ## Skills
 
 Skills live in `~/.config/opencode/skills/<skill-name>/SKILL.md` (YAML frontmatter `name`, `description` saying when
-to use it), loaded by OpenCode, OmO, omp and Claude Code. Some are symlinks into `~/pitolabs/builder-skills` (public:
-[pitolabs/builder-skills](https://github.com/pitolabs/builder-skills)); change those there, in a worktree, never
-through the link.
+to use it), loaded by OpenCode, OmO, omp and Claude Code. Those from builder-skills are symlinks into its clone (where
+it is: your environment's section); change them in a worktree of builder-skills, never through the link.
 
 ## Git repositories: always your own worktree
 
@@ -86,11 +87,10 @@ until someone stops it, and nothing reports an error. (2026-11-17, PitoBox: a Sw
 
 ## Obsidian vaults synced by LiveSync
 
-On a Mac, Obsidian's LiveSync syncs only when the Obsidian window gets focus. A file changed or deleted in the vault
-by a shell or another editor stays local until then, and changes from other devices or servers arrive only then too.
-After editing a vault outside Obsidian, bring Obsidian to the front (`open -a Obsidian`), then check that the other
-copy changed. Don't write the other copy by hand as well: LiveSync has no version check, so two writers of one file
-can lose an edit.
+A vault has several copies (phone, Mac, server volumes) that LiveSync keeps in step through CouchDB. LiveSync has no
+version check, so two writers of one file can lose an edit: write a change on one copy only, never the same change by
+hand on another, and after editing check that the other copy received it. When your copy syncs, and where it is:
+your environment's section.
 
 ## Proposing solutions
 
