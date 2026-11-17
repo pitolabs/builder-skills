@@ -32,7 +32,10 @@ cd ../<repo>-<task>   # then the repo's own setup (bun install, sh scripts/setup
   are fine.
 - When done: push (`git push origin <task>:<default-branch>`, or open a PR), then
   `git worktree remove ../<repo>-<task>` and delete the branch.
-- Read-only investigation (reading code, logs, running nothing that writes) needs no worktree.
+- Read-only investigation (reading code, logs, running nothing that writes) needs no worktree. But a checkout you
+  only read may be behind `origin`, and so is the `AGENTS.md` loaded from it: `git fetch origin` and read from
+  `origin/<default-branch>` (`git show origin/main:<file>`, `git log origin/main`) before answering from it, and
+  never say something is not in a repository before checking there.
 - A repository's own AGENTS.md may add setup steps (e.g. which install turns on its hooks); it does not lift this rule.
 
 ## Repository standard
