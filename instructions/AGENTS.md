@@ -70,12 +70,29 @@ scenario in …"), and the command that proves it. A plan lists this as a step w
 documentation cleanup for afterwards. Do not restate what code or CI already says; name the file that decides. An
 `AGENTS.md` that still describes the old flow is a rule the next agent executes.
 
+## Public repositories: nothing personal, nothing internal
+
+Some repositories are public, builder-skills among them, and so are these instructions (`gh repo view <owner>/<repo>
+--json visibility` says which). A push there publishes at once, on any branch, and a later fix leaves it in the
+history. The privacy hooks of `public-repo-standard` refuse known secret formats and the exact strings on the personal
+blocklist; they do not see what a person did or how our systems are built. That judgement is yours:
+
+- **Nothing about a person:** names, contacts, what someone bought, searched for, said, earns or suffers from, where
+  they live or work, whose session something happened in. A lesson from a session goes in as the rule and a neutral
+  example ("a session sat 36 minutes on …"), never as the story (who, what they were doing, the date).
+- **Nothing internal:** host names and addresses, where secrets and keys are kept, the names and interfaces of private
+  tools and services, how servers and containers are locked down, backup schedules. They belong in the `AGENTS.md` of
+  the private repository that owns them.
+- Examples use neutral names (`example.com`, `<dev>`, `my-app`).
+- Before committing to a public repository, read the staged diff once against this list, as you would for a secret.
+  Something already pushed: remove it in a new commit and tell the developer; rewriting public history is their call.
+
 ## Scripts that call tools: every `await` must settle
 
 A harness that runs code you write with tools inside it (OpenCode's `execute` script, an eval cell) waits for every
 `await` in it, and the turn shows "running" until the script ends: one promise that never settles holds the session
-until someone stops it, and nothing reports an error. (2026-11-17, PitoBox: a Switch 2 price check sat 36 minutes on
-`await new Promise(r=>r)`, written before the `pitoshopping.pesquisar` calls, which never started.)
+until someone stops it, and nothing reports an error (seen: a session sat 36 minutes on `await new Promise(r=>r)`,
+written before its tool calls, which never ran).
 
 - Every `await` is a tool call or a promise that settles by itself. Never a placeholder, a `new Promise` whose
   executor never calls `resolve`/`reject`, or a wait for an event nothing will send. To pause, use a bounded timer:

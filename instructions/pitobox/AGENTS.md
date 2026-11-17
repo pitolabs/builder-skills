@@ -71,12 +71,29 @@ scenario in …"), and the command that proves it. A plan lists this as a step w
 documentation cleanup for afterwards. Do not restate what code or CI already says; name the file that decides. An
 `AGENTS.md` that still describes the old flow is a rule the next agent executes.
 
+## Public repositories: nothing personal, nothing internal
+
+Some repositories are public, builder-skills among them, and so are these instructions (`gh repo view <owner>/<repo>
+--json visibility` says which). A push there publishes at once, on any branch, and a later fix leaves it in the
+history. The privacy hooks of `public-repo-standard` refuse known secret formats and the exact strings on the personal
+blocklist; they do not see what a person did or how our systems are built. That judgement is yours:
+
+- **Nothing about a person:** names, contacts, what someone bought, searched for, said, earns or suffers from, where
+  they live or work, whose session something happened in. A lesson from a session goes in as the rule and a neutral
+  example ("a session sat 36 minutes on …"), never as the story (who, what they were doing, the date).
+- **Nothing internal:** host names and addresses, where secrets and keys are kept, the names and interfaces of private
+  tools and services, how servers and containers are locked down, backup schedules. They belong in the `AGENTS.md` of
+  the private repository that owns them.
+- Examples use neutral names (`example.com`, `<dev>`, `my-app`).
+- Before committing to a public repository, read the staged diff once against this list, as you would for a secret.
+  Something already pushed: remove it in a new commit and tell the developer; rewriting public history is their call.
+
 ## Scripts that call tools: every `await` must settle
 
 A harness that runs code you write with tools inside it (OpenCode's `execute` script, an eval cell) waits for every
 `await` in it, and the turn shows "running" until the script ends: one promise that never settles holds the session
-until someone stops it, and nothing reports an error. (2026-11-17, PitoBox: a Switch 2 price check sat 36 minutes on
-`await new Promise(r=>r)`, written before the `pitoshopping.pesquisar` calls, which never started.)
+until someone stops it, and nothing reports an error (seen: a session sat 36 minutes on `await new Promise(r=>r)`,
+written before its tool calls, which never ran).
 
 - Every `await` is a tool call or a promise that settles by itself. Never a placeholder, a `new Promise` whose
   executor never calls `resolve`/`reject`, or a wait for an event nothing will send. To pause, use a bounded timer:
@@ -121,10 +138,9 @@ to ~95%; I suggest doing that before rollout.
 
 ## Environment: PitoBox
 
-You run in a PitoBox: one developer's container at `https://<dev>.box.pitolabs.com`, OpenChamber driving OpenCode,
-as user `pitobox` (uid 1000). No root, no Docker, no way into the VM it runs on or into other boxes. Only
-`/home/pitobox` and `/workspace` are volumes (kept across restarts, backed up nightly); the rest of the filesystem
-is reset whenever the box image is rebuilt.
+You run in a PitoBox: one developer's remote container, OpenChamber driving OpenCode, as user `pitobox`, with no root
+and no Docker. Only `/home/pitobox` and `/workspace` survive a restart or a new box image; anything you put elsewhere
+is gone after one.
 
 - builder-skills is cloned at `~/.local/share/pitobox/builder-skills`, which the box resets to the latest `main` at
   start and every 30 minutes. `~/.config/opencode/AGENTS.md` links to its `instructions/pitobox/AGENTS.md`, and
@@ -135,8 +151,7 @@ is reset whenever the box image is rebuilt.
   reach GitHub as the developer once the **GitHub login** project action has run (`gh auth status` says).
 - Bun, uv and mise are not in the image. A task that needs them (a repository's setup script, the standards' audits)
   installs them with their official installers, which write to the home volume (`~/.bun`, `~/.local/bin`).
-- There are no deploy secrets and no SSH keys to Pito Labs servers here: a deploy runs from the developer's laptop.
-  Prepare and push the change, and say what is left to run there.
-- The developer's Obsidian vault, when the box has one, is `/workspace/obsidian`. A LiveSync sidecar (pitovault)
-  keeps it in step with CouchDB all the time, with no app to bring to the front; the phone and the Mac get an edit
-  when their own Obsidian syncs.
+- Deploys do not run from here: the box has none of what they need. Prepare and push the change, and say what is
+  left for the developer to run on their laptop.
+- The developer's Obsidian vault, when the box has one, is `/workspace/obsidian`. A LiveSync process keeps it in step
+  all the time, with no app to bring to the front; the phone and the Mac get an edit when their own Obsidian syncs.

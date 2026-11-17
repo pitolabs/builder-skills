@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## This repository is public
+
+Everything here is published, the instructions included, and the history keeps what a later commit removes. The rule
+is the section "Public repositories: nothing personal, nothing internal" of `instructions/AGENTS.md`: no person, what
+they did or when; no host, secret location, private tool or how a server is locked down. An environment layer
+(`instructions/<env>.md`) holds what an agent needs to work there (paths, which tools are installed, where repositories
+go), never how that environment is secured or reached; that lives in the private repository that runs it. The privacy
+hooks catch secrets and blocklisted strings only: read the staged diff yourself before committing.
+
 ## Tests that edit a template asset
 
 Renovate bumps the version pins inside `skills/*/assets/` (pytest, ruff, …). A test that adapts an asset for its

@@ -72,8 +72,8 @@ The audits need [Bun](https://bun.com), [uv](https://docs.astral.sh/uv/) and [mi
 
 Update with `git -C ~/pitolabs/builder-skills pull --ff-only`. Never edit the clone itself.
 
-A PitoBox installs itself: its entrypoint keeps a clone in `~/.local/share/pitobox/builder-skills` at the latest
-`main` and links `instructions/pitobox/AGENTS.md` and the skills (`box/sync-builder-skills.sh` in pitobox).
+A PitoBox installs itself: it keeps a clone in `~/.local/share/pitobox/builder-skills` at the latest `main` and links
+`instructions/pitobox/AGENTS.md` and the skills.
 
 ## Change the instructions
 

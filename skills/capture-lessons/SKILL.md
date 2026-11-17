@@ -139,6 +139,11 @@ Then compress: keep the **transferable rule**, discard the story.
   and no appetite to start one → keep the one-line rule and drop the ADR.
 - Both a trap and a procedure → `AGENTS.md` gets the one-line warning and the
   skill trigger; the skill owns the commands. Never duplicate the procedure.
+- A destination in a **public** repository (builder-skills and its
+  instructions; `gh repo view --json visibility`) takes the rule and a
+  neutral example only: no person, what they were doing or when, no host,
+  secret location or private tool. Evidence that cannot be told without them
+  goes to the private repository that owns it, or nowhere.
 
 **Which `AGENTS.md`:** the **deepest file whose directory covers every path the
 lesson touches.** Walk up from the affected code, stop at the first one. Never
