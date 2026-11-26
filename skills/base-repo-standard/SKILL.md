@@ -150,9 +150,9 @@ A PR that bumps a tool in `mise.toml` may arrive without a regenerated `mise.loc
   dashboard. The preset sets `mode: full`; if no Dependency Dashboard issue appears after two runs, turn it off by
   hand: developer.mend.io → the repository → Settings → Dependencies → Silent mode off, Automated PRs on.
 - Mend runs a repository where **no Renovate PR has ever been merged** only once a day
-  ([job scheduling](https://docs.renovatebot.com/mend-hosted/job-scheduling/)): too seldom to open a PR and merge it
-  inside the window, so nothing ever merges and the repository stays on the daily schedule. In a new repository,
-  merge the first green Renovate PR by hand; from then on it runs every few hours.
+  ([job scheduling](https://docs.renovatebot.com/mend-hosted/job-scheduling/)), so its PRs can miss the window (a PR
+  needs one run to open or update it and another after CI is green). If a new repository's PRs keep missing it, merge
+  one green Renovate PR by hand; Mend then runs it every few hours.
 - `prHourlyLimit` (default 2) held PRs back for hours; the preset sets it to 0.
 - osv-scanner exits 128 when there is no lockfile to scan; the task treats that as "nothing to scan", not a failure.
 - GitHub's dependency graph does not read `bun.lock` or `uv.lock`, so Dependabot alerts cover only what
