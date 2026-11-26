@@ -114,6 +114,15 @@ written before its tool calls, which never ran).
 - A script running longer than its tool calls should: look at what it waits on (the server's processes or logs, the
   script's code) before you blame the server or wait more.
 
+## Websites that block automation: CloakBrowser
+
+A site that refuses an automated browser, or sits behind bot protection (a challenge page, a CAPTCHA wall, an empty
+page or an "access denied" where a person gets content), is opened in
+[CloakBrowser](https://github.com/CloakHQ/CloakBrowser): a Chromium with source-level fingerprint patches, driven over
+CDP like any Chromium. Use its latest release (the free license always downloads the newest build). Every launch
+needs a license key; a free key allows one session at a time, so stop the browser when the task is done to release it.
+How to start it and where its key is: your machine's section. Static pages and APIs do not need it: read them directly.
+
 ## Obsidian vaults synced by LiveSync
 
 A vault has several copies (phone, Mac, server volumes) that LiveSync keeps in step through CouchDB. LiveSync has no
