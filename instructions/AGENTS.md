@@ -64,6 +64,15 @@ When you write a script (a tool, a helper an image runs, anything beyond a few l
 run by Bun, not Python. Exception: inside an image that already ships Node, use that Node when it runs the script
 (test it with that image's `node`: older versions and non-erasable syntax fail), so the image gets no second runtime.
 
+## Names in English
+
+Everything a program reads is named in English: URL paths and API endpoints, query and body fields, file and folder
+names, package names, environment variables, database tables and columns, storage keys, identifiers and code comments.
+What a person reads (interface text, prompts, messages, generated documents) is in the product's language.
+A new name is English from the start. An existing name in another language is renamed when the change that touches it
+can also migrate what depends on it (stored data, links people hold); until then it stays whole: never translate half
+of a path.
+
 ## A mechanism change carries its AGENTS.md
 
 When a change adds or alters something later work must keep in sync — a test that gates merges, a deploy flow, a CI
