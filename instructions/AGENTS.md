@@ -53,7 +53,7 @@ and requires CI that runs the repository's tests on pull requests. A repository 
 follows `public-repo-standard`. The org requires two-factor authentication for everyone.
 
 Actions minutes in private repositories are paid (GitHub Free includes $12 a month for the whole org), so CI there
-runs only when it has to. Renovate acts only on Monday and Tuesday (UTC), with the updates that merge themselves in
+runs only when it has to. Renovate acts only on Monday to Wednesday (UTC), with the updates that merge themselves in
 one PR per repository: on other days it leaves its PRs alone, so do not wait for one to merge (its rebase checkbox
 acts at once); `default.json` and `automerge.json` in `pitolabs/renovate-config` decide this. Every workflow of a
 private repository that runs on `pull_request` has a workflow-level `concurrency:` that cancels the run a newer push
